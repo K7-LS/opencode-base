@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "target": "opencode-base",
+  "history_policy": "clean-history-with-pinned-provenance",
+  "source": {
+    "repository": "https://github.com/daniileliseev1337/claude-base",
+    "commit": "d263065d902000a032c87bd31175889168f616bc",
+    "tree": "7e3fda8ff712e22bb1d5a2bb533bd7a6998cc474"
+  },
+  "migration_status": "NOT_STARTED",
+  "legacy_repository_deleted": false
+}

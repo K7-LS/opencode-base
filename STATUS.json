@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "target": "opencode",
+  "TARGET_IMPLEMENTATION": "NOT_STARTED",
+  "PROVIDER_NEUTRAL_ACCEPTANCE": "NOT_RUN",
+  "OPENCODE_CANARY": "NOT_RUN",
+  "FULL_RELEASE_OPENCODE": "NOT_PASS",
+  "PROGRAM_RELEASE": "0/3",
+  "standalone_targets_excluded": [
+    "kimi"
+  ],
+  "blocked_by": [
+    "FULL_RELEASE_CODEX is not PASS",
+    "native OpenCode configuration is not implemented",
+    "provider-neutral acceptance is not run"
+  ]
+}
