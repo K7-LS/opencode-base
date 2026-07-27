@@ -163,6 +163,25 @@ def test_opencode_managed_surface_is_native_and_preserves_state():
         "version": "1.18.7",
     }
     assert client_evidence["binary"]["authenticode_status"] == "Valid"
+    assert client_evidence["distribution"]["method"] == (
+        "official-release-assets"
+    )
+    assert client_evidence["download"] == {
+        "name": "opencode-windows-x64.zip",
+        "url": "https://github.com/anomalyco/opencode/releases/download/v1.18.7/opencode-windows-x64.zip",
+        "sha256": "54598e262c0744e6c3b9ddba85764917a48d366a9aa6c817c2feb9d34b3f1105",
+        "bytes": 59436082,
+        "archive_entry": "opencode.exe",
+    }
+    assert client_evidence["binary"]["sha256"] == (
+        "b7b469b83cc3561e5129a1803b746f7e2c1974297909f5b346398dc9c56a477e"
+    )
+    assert client_evidence["binary"]["signer"] == (
+        "Anomaly Innovations, Inc https://anoma.ly/"
+    )
+    assert client_evidence["desktop"]["sha256"] == (
+        "d44d535d4f3ac0dafcca8cbbf2bad6e0baefb089352a795fc57268337bdea378"
+    )
     assert client_evidence["runtime_smoke"]["model_requests"] == 0
     assert release["environment"] == {
         "scope": "current-user",

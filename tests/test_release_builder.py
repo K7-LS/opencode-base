@@ -26,6 +26,17 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _evidence_body_sha256(value: dict[str, object]) -> str:
+    body = dict(value)
+    body.pop("evidence_body_sha256", None)
+    return hashlib.sha256(
+        (
+            json.dumps(body, ensure_ascii=False, sort_keys=True, indent=2)
+            + "\n"
+        ).encode("utf-8")
+    ).hexdigest()
+
+
 def _json(path: Path, value: object) -> None:
     path.write_text(
         json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
@@ -122,6 +133,9 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
     assert _sha256(first.zip_path) == _sha256(second.zip_path)
     assert first.manifest == second.manifest
     assert first.manifest["channel"] == "candidate"
+    binding = release_builder.release_binding_from_manifest(first.manifest)
+    assert binding["asset"] == first.manifest["asset"]
+    assert binding["source"] == identity
     assert first.manifest["client"] == {
         "id": contract["client"]["id"],
         "supported_version": "1.18.7",
@@ -188,6 +202,14 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
     assert len(lock["components"]["commands"]) == 3
     assert len(lock["components"]["cold"]) == 22
 
+    evidence = tmp_path / "candidate-evidence.json"
+    evidence.write_text('{"CANDIDATE_OFFLINE":"PASS"}\n', encoding="utf-8")
+    bound = release_builder.bind_candidate_acceptance(
+        first.manifest_path,
+        evidence,
+    )
+    assert bound["acceptance_evidence_sha256"] == _sha256(evidence)
+
 
 def test_package_acceptance_requires_stable_attested_full_pass(tmp_path: Path):
     source, contract = _accepted_source(tmp_path)
@@ -208,33 +230,68 @@ def test_package_acceptance_requires_stable_attested_full_pass(tmp_path: Path):
     stable = dict(built.manifest)
     stable["channel"] = "stable"
     _json(built.manifest_path, stable)
+    binding = release_builder.release_binding_from_manifest(stable)
     evidence = {
         "schema_version": 1,
         "target": contract["target"],
+        "version": stable["version"],
+        "release_binding": binding,
         "verdicts": {
             release_builder.FULL_VERDICTS[contract["target"]]: "PASS",
-            "RELEASE_INTEGRITY": "PASS",
+            "RELEASE_INTEGRITY": "PENDING_PUBLICATION",
         },
         "asset_sha256": stable["asset"]["sha256"],
-        "release_manifest_sha256": _sha256(built.manifest_path),
     }
+    evidence["evidence_body_sha256"] = _evidence_body_sha256(evidence)
     evidence_path = built.manifest_path.parent / "acceptance-evidence.json"
     _json(evidence_path, evidence)
+    verification = {
+        "schema_version": 1,
+        "repository": contract["repository"].removeprefix(
+            "https://github.com/"
+        ),
+        "tag": stable["tag"],
+        "release_state": {
+            "draft": False,
+            "prerelease": False,
+            "immutable": True,
+        },
+        "release_attestation": "PASS",
+        "assets": [
+            {
+                **stable["asset"],
+                "attestation": "PASS",
+            }
+        ],
+        "RELEASE_INTEGRITY": "PASS",
+    }
+    verification["evidence_body_sha256"] = _evidence_body_sha256(
+        verification
+    )
+    verification_path = (
+        built.manifest_path.parent / "release-verification.json"
+    )
+    _json(verification_path, verification)
     output = built.manifest_path.parent / "package-acceptance.json"
 
     accepted = release_builder.create_package_acceptance(
         built.manifest_path,
         evidence_path,
+        verification_path,
         output,
     )
     assert accepted["package_acceptance"] == "PASS"
     assert accepted["asset"]["sha256"] == _sha256(built.zip_path)
 
-    evidence["verdicts"]["RELEASE_INTEGRITY"] = "NOT_PASS"
-    _json(evidence_path, evidence)
+    verification["RELEASE_INTEGRITY"] = "NOT_PASS"
+    verification["evidence_body_sha256"] = _evidence_body_sha256(
+        verification
+    )
+    _json(verification_path, verification)
     with pytest.raises(ValueError, match="incomplete"):
         release_builder.create_package_acceptance(
             built.manifest_path,
             evidence_path,
+            verification_path,
             output,
         )

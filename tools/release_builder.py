@@ -45,6 +45,50 @@ def _file_sha256(path: Path) -> str:
     return _sha256(path.read_bytes())
 
 
+def _evidence_body_sha256(value: dict[str, object]) -> str:
+    body = dict(value)
+    body.pop("evidence_body_sha256", None)
+    return _sha256(_json_bytes(body))
+
+
+def release_binding_from_manifest(
+    manifest: dict[str, object],
+) -> dict[str, object]:
+    required = (
+        "target",
+        "version",
+        "tag",
+        "client",
+        "asset",
+        "package_manifest_sha256",
+        "components_lock_sha256",
+        "source",
+        "foundation_engine_version",
+        "foundation_engine_manifest_sha256",
+    )
+    missing = [name for name in required if name not in manifest]
+    if missing:
+        raise ValueError(
+            "release manifest lacks binding fields: " + ", ".join(missing)
+        )
+    return {name: manifest[name] for name in required}
+
+
+def bind_candidate_acceptance(
+    manifest_path: Path,
+    evidence_path: Path,
+) -> dict[str, object]:
+    manifest = _load_json(manifest_path)
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("channel") != "candidate"
+    ):
+        raise ValueError("only candidate manifests can bind acceptance")
+    manifest["acceptance_evidence_sha256"] = _file_sha256(evidence_path)
+    manifest_path.write_bytes(_json_bytes(manifest))
+    return manifest
+
+
 def _tree_files(root: Path) -> list[Path]:
     return sorted(
         (
@@ -74,13 +118,17 @@ def load_client_acceptance(
         "verdict",
         "client",
         "distribution",
+        "download",
         "binary",
+        "desktop",
         "runtime_smoke",
         "limitations",
     }
     client = contract["client"]
     distribution = evidence.get("distribution")
+    download = evidence.get("download")
     binary = evidence.get("binary")
+    desktop = evidence.get("desktop")
     smoke = evidence.get("runtime_smoke")
     if (
         not isinstance(evidence, dict)
@@ -102,13 +150,23 @@ def load_client_acceptance(
             "scope",
             "source",
         }
-        or distribution["method"] not in {"winget", "npm"}
+        or distribution["method"] != "official-release-assets"
         or distribution["package_version"] != client["supported_version"]
         or distribution["scope"] != "current-user"
         or not all(
             isinstance(distribution[name], str) and distribution[name]
             for name in ("package_id", "source")
         )
+        or not isinstance(download, dict)
+        or set(download)
+        != {"name", "url", "sha256", "bytes", "archive_entry"}
+        or download["name"] != distribution["package_id"]
+        or download["url"] != distribution["source"]
+        or re.fullmatch(r"[0-9a-f]{64}", str(download["sha256"]))
+        is None
+        or not isinstance(download["bytes"], int)
+        or download["bytes"] <= 0
+        or download["archive_entry"] != "opencode.exe"
         or not isinstance(binary, dict)
         or set(binary)
         != {
@@ -129,6 +187,31 @@ def load_client_acceptance(
         or not isinstance(binary["issuer"], str)
         or not binary["issuer"]
         or binary["timestamped"] is not True
+        or not isinstance(desktop, dict)
+        or set(desktop)
+        != {
+            "name",
+            "url",
+            "sha256",
+            "bytes",
+            "authenticode_status",
+            "signer",
+            "issuer",
+            "timestamped",
+            "file_version",
+        }
+        or desktop["name"] != "opencode-desktop-win-x64.exe"
+        or re.fullmatch(r"[0-9a-f]{64}", str(desktop["sha256"]))
+        is None
+        or not isinstance(desktop["bytes"], int)
+        or desktop["bytes"] <= 0
+        or desktop["authenticode_status"] != "Valid"
+        or not isinstance(desktop["signer"], str)
+        or not desktop["signer"]
+        or not isinstance(desktop["issuer"], str)
+        or not desktop["issuer"]
+        or desktop["timestamped"] is not True
+        or desktop["file_version"] != client["supported_version"]
         or not isinstance(smoke, dict)
         or set(smoke)
         != {
@@ -602,20 +685,27 @@ def build_release(
 def create_package_acceptance(
     stable_manifest_path: Path,
     evidence_path: Path,
+    release_verification_path: Path,
     output_path: Path,
 ) -> dict[str, object]:
     stable = _load_json(stable_manifest_path)
     evidence = _load_json(evidence_path)
+    verification = _load_json(release_verification_path)
     target = str(stable.get("target"))
     verdict = FULL_VERDICTS.get(target)
+    binding = release_binding_from_manifest(stable)
     if (
         stable.get("channel") != "stable"
         or verdict is None
         or evidence.get("target") != target
+        or evidence.get("version") != stable.get("version")
+        or evidence.get("release_binding") != binding
+        or evidence.get("evidence_body_sha256")
+        != _evidence_body_sha256(evidence)
         or evidence.get("verdicts", {}).get(verdict) != "PASS"
-        or evidence.get("verdicts", {}).get("RELEASE_INTEGRITY") != "PASS"
+        or evidence.get("verdicts", {}).get("RELEASE_INTEGRITY")
+        != "PENDING_PUBLICATION"
         or evidence.get("asset_sha256") != stable.get("asset", {}).get("sha256")
-        or evidence.get("release_manifest_sha256") != _file_sha256(stable_manifest_path)
         or stable.get("requires", {}).get("immutable_release") is not True
         or stable.get("requires", {}).get("release_attestation") is not True
     ):
@@ -627,6 +717,31 @@ def create_package_acceptance(
         or asset_path.stat().st_size != stable["asset"]["bytes"]
     ):
         raise ValueError("stable release asset binding differs")
+    expected_repository = str(
+        stable.get("source", {}).get("repository", "")
+    ).removeprefix("https://github.com/").rstrip("/")
+    expected_verified_asset = {
+        **stable["asset"],
+        "attestation": "PASS",
+    }
+    if (
+        not isinstance(verification, dict)
+        or verification.get("schema_version") != 1
+        or verification.get("repository") != expected_repository
+        or verification.get("tag") != stable.get("tag")
+        or verification.get("release_state")
+        != {
+            "draft": False,
+            "prerelease": False,
+            "immutable": True,
+        }
+        or verification.get("release_attestation") != "PASS"
+        or verification.get("assets") != [expected_verified_asset]
+        or verification.get("RELEASE_INTEGRITY") != "PASS"
+        or verification.get("evidence_body_sha256")
+        != _evidence_body_sha256(verification)
+    ):
+        raise ValueError("stable release acceptance evidence is incomplete")
     result = {
         "schema_version": 1,
         "target": target,
@@ -642,6 +757,11 @@ def create_package_acceptance(
             "name": evidence_path.name,
             "sha256": _file_sha256(evidence_path),
             "bytes": evidence_path.stat().st_size,
+        },
+        "release_verification": {
+            "name": release_verification_path.name,
+            "sha256": _file_sha256(release_verification_path),
+            "bytes": release_verification_path.stat().st_size,
         },
         "immutable_release": True,
         "release_attestation": True,

@@ -61,6 +61,9 @@ def test_offline_contract_overlay_is_explicit_and_non_releasable():
     assert report["FOUNDATION_FAKE_HOME"] == "PASS"
     assert report["FULL_RELEASE_OPENCODE"] == "NOT_PASS"
     assert "package_acceptance" not in report
+    assert report["evidence_body_sha256"] == runner.evidence_body_sha256(
+        report
+    )
 
 
 def test_offline_workspace_is_adjacent_to_evidence(tmp_path):
@@ -96,3 +99,6 @@ def test_accepted_client_candidate_report_remains_non_stable():
     assert report["FULL_RELEASE_OPENCODE"] == "NOT_PASS"
     assert report["NON_RELEASABLE"] is True
     assert "package_acceptance" not in report
+    assert report["evidence_body_sha256"] == runner.evidence_body_sha256(
+        report
+    )

@@ -35,6 +35,12 @@ def _json_bytes(value: object) -> bytes:
     ).encode("utf-8")
 
 
+def evidence_body_sha256(value: dict[str, object]) -> str:
+    body = dict(value)
+    body.pop("evidence_body_sha256", None)
+    return hashlib.sha256(_json_bytes(body)).hexdigest()
+
+
 def _sha256(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
@@ -77,6 +83,7 @@ def build_acceptance_report(
     matrix: dict[str, object],
     synthetic: bool = True,
     client_version: str = SYNTHETIC_CLIENT_VERSION,
+    release_binding: dict[str, object] | None = None,
 ) -> dict[str, object]:
     verdict = FULL_VERDICTS[target]
     matrix_passed = bool(matrix) and all(
@@ -124,6 +131,9 @@ def build_acceptance_report(
         report["CANDIDATE_OFFLINE"] = (
             "PASS" if matrix_passed else "NOT_PASS"
         )
+        if release_binding is not None:
+            report["release_binding"] = release_binding
+    report["evidence_body_sha256"] = evidence_body_sha256(report)
     return report
 
 
@@ -546,15 +556,22 @@ def run_acceptance(
         matrix=matrix,
         synthetic=synthetic,
         client_version=client_version,
+        release_binding=release_builder.release_binding_from_manifest(
+            first.manifest
+        ),
     )
     evidence_name = (
         "offline-acceptance.json"
         if synthetic
         else "candidate-acceptance.json"
     )
-    (output_root / evidence_name).write_bytes(
-        _json_bytes(report)
-    )
+    evidence_path = output_root / evidence_name
+    evidence_path.write_bytes(_json_bytes(report))
+    if not synthetic:
+        release_builder.bind_candidate_acceptance(
+            output_root / "release-manifest.json",
+            evidence_path,
+        )
     return report
 
 
