@@ -170,6 +170,20 @@ def test_opencode_managed_surface_is_native_and_preserves_state():
     assert "Invoke-WithLlmConnection" in hook
 
 
+def test_opencode_managed_surface_arrays_are_foundation_canonical():
+    managed = json.loads(
+        (ROOT / "runtime" / "managed-surface.json").read_text(encoding="utf-8")
+    )
+    for name in (
+        "exact_directories",
+        "replace_files",
+        "preserved_paths",
+    ):
+        values = managed[name]
+        assert values == sorted(values), f"{name} is not ordinal-sorted"
+        assert len(values) == len({value.casefold() for value in values})
+
+
 def test_opencode_release_status_stays_fail_closed_before_canary():
     status = json.loads((ROOT / "STATUS.json").read_text(encoding="utf-8"))
     assert status["TARGET_IMPLEMENTATION"] == "IN_PROGRESS"

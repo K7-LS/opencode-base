@@ -3,25 +3,25 @@
   "target": "opencode",
   "replace_files": [
     ".config/opencode/AGENTS.md",
-    ".config/opencode/opencode.json",
     ".config/opencode/base/VERSION",
-    ".config/opencode/base/components.lock.json"
+    ".config/opencode/base/components.lock.json",
+    ".config/opencode/opencode.json"
   ],
   "exact_directories": [
     ".config/opencode/agents",
-    ".config/opencode/skills",
-    ".config/opencode/commands",
     ".config/opencode/base/cold",
     ".config/opencode/base/foundation",
-    ".config/opencode/base/runtime"
+    ".config/opencode/base/runtime",
+    ".config/opencode/commands",
+    ".config/opencode/skills"
   ],
   "preserved_paths": [
-    ".local/share/opencode",
     ".config/opencode/auth.json",
+    ".config/opencode/base/state",
     ".config/opencode/plugins",
     ".config/opencode/themes",
     ".config/opencode/tools",
-    ".config/opencode/base/state",
+    ".local/share/opencode",
     "projects"
   ]
 }
