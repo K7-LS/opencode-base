@@ -75,6 +75,8 @@ def build_acceptance_report(
     foundation: dict[str, object],
     asset: dict[str, object],
     matrix: dict[str, object],
+    synthetic: bool = True,
+    client_version: str = SYNTHETIC_CLIENT_VERSION,
 ) -> dict[str, object]:
     verdict = FULL_VERDICTS[target]
     matrix_passed = bool(matrix) and all(
@@ -85,11 +87,13 @@ def build_acceptance_report(
         )
         for value in matrix.values()
     )
-    return {
+    report = {
         "schema_version": 1,
         "target": target,
         "NON_RELEASABLE": True,
-        "CLIENT_CONTRACT": "SYNTHETIC_ONLY",
+        "CLIENT_CONTRACT": (
+            "SYNTHETIC_ONLY" if synthetic else "ACCEPTED_BINARY"
+        ),
         "FOUNDATION_FAKE_HOME": (
             "PASS" if matrix_passed else "NOT_PASS"
         ),
@@ -100,13 +104,27 @@ def build_acceptance_report(
         "foundation": foundation,
         "asset": asset,
         "matrix": matrix,
-        "limitations": [
-            "The client version is a synthetic offline contract overlay.",
-            "The package transformation intentionally differs from release policy.",
-            "No live client, user home, network, paid model, or stable release was used.",
-            "This evidence cannot create package-acceptance.json.",
-        ],
+        "limitations": (
+            [
+                "The client version is a synthetic offline contract overlay.",
+                "The package transformation intentionally differs from release policy.",
+                "No live client, user home, network, paid model, or stable release was used.",
+                "This evidence cannot create package-acceptance.json.",
+            ]
+            if synthetic
+            else [
+                f"The exact client binary {client_version} is accepted, but no live base canary ran.",
+                "No provider login, model request, paid A/B, immutable release, or employee rollout ran.",
+                "This candidate evidence cannot create package-acceptance.json.",
+            ]
+        ),
     }
+    if not synthetic:
+        report["CLIENT_BINARY_ACCEPTANCE"] = "PASS"
+        report["CANDIDATE_OFFLINE"] = (
+            "PASS" if matrix_passed else "NOT_PASS"
+        )
+    return report
 
 
 def _validate_foundation(
@@ -153,6 +171,7 @@ def _run_foundation(
     command: str,
     target: str,
     client_id: str,
+    client_version: str,
     package: Path,
     home: Path,
 ) -> dict[str, object]:
@@ -178,7 +197,7 @@ def _run_foundation(
                 "-ClientId",
                 client_id,
                 "-ClientVersion",
-                SYNTHETIC_CLIENT_VERSION,
+                client_version,
             ]
         )
     environment = os.environ.copy()
@@ -282,6 +301,7 @@ def _run_matrix_case(
     package: Path,
     target: str,
     client_id: str,
+    client_version: str,
     root: Path,
 ) -> dict[str, object]:
     home = root / Path(executable).stem
@@ -294,6 +314,7 @@ def _run_matrix_case(
         command="plan",
         target=target,
         client_id=client_id,
+        client_version=client_version,
         package=package,
         home=home,
     )
@@ -303,6 +324,7 @@ def _run_matrix_case(
         command="install",
         target=target,
         client_id=client_id,
+        client_version=client_version,
         package=package,
         home=home,
     )
@@ -315,6 +337,7 @@ def _run_matrix_case(
         command="doctor",
         target=target,
         client_id=client_id,
+        client_version=client_version,
         package=package,
         home=home,
     )
@@ -324,6 +347,7 @@ def _run_matrix_case(
         command="inventory",
         target=target,
         client_id=client_id,
+        client_version=client_version,
         package=package,
         home=home,
     )
@@ -341,6 +365,7 @@ def _run_matrix_case(
         command="rollback",
         target=target,
         client_id=client_id,
+        client_version=client_version,
         package=package,
         home=home,
     )
@@ -383,6 +408,7 @@ def run_acceptance(
     foundation_root: Path,
     foundation_evidence: Path,
     output_root: Path,
+    candidate_version: str | None = None,
 ) -> dict[str, object]:
     if output_root.exists():
         raise ValueError("Output root must not exist")
@@ -398,11 +424,31 @@ def run_acceptance(
     )
     target = str(contract["target"])
     client_id = str(contract["client"]["id"])
-    if contract["client"]["acceptance"] != "NOT_ACCEPTED":
+    accepted_client = contract["client"]["acceptance"] == "PASS"
+    if accepted_client:
+        if (
+            candidate_version is None
+            or release_builder.VERSION.fullmatch(candidate_version) is None
+        ):
+            raise ValueError(
+                "Accepted client requires a canonical candidate version"
+            )
+        client_version = str(contract["client"]["supported_version"])
+        release_identity = identity
+        package_version = candidate_version
+    elif contract["client"]["acceptance"] == "NOT_ACCEPTED":
+        if candidate_version is not None:
+            raise ValueError(
+                "Unaccepted client cannot build a real candidate"
+            )
+        client_version = SYNTHETIC_CLIENT_VERSION
+        release_identity = make_synthetic_identity(identity)
+        package_version = SYNTHETIC_PACKAGE_VERSION
+    else:
         raise ValueError(
-            "Offline overlay is allowed only before client acceptance"
+            "Client acceptance state is invalid"
         )
-    synthetic_identity = make_synthetic_identity(identity)
+    synthetic = not accepted_client
 
     with tempfile.TemporaryDirectory(
         prefix=f"{target}-offline-acceptance-",
@@ -413,33 +459,34 @@ def run_acceptance(
             repo_root,
             identity,
         ) as source:
-            synthetic_contract = make_synthetic_contract(
-                json.loads(
-                    (
-                        source
-                        / "runtime"
-                        / "release-contract.json"
-                    ).read_text(encoding="utf-8")
+            if synthetic:
+                synthetic_contract = make_synthetic_contract(
+                    json.loads(
+                        (
+                            source
+                            / "runtime"
+                            / "release-contract.json"
+                        ).read_text(encoding="utf-8")
+                    )
                 )
-            )
-            (
-                source
-                / "runtime"
-                / "release-contract.json"
-            ).write_bytes(_json_bytes(synthetic_contract))
+                (
+                    source
+                    / "runtime"
+                    / "release-contract.json"
+                ).write_bytes(_json_bytes(synthetic_contract))
             first = release_builder.build_release_from_source(
                 source,
                 temporary_root / "build-a",
-                SYNTHETIC_PACKAGE_VERSION,
+                package_version,
                 foundation_root,
-                synthetic_identity,
+                release_identity,
             )
             second = release_builder.build_release_from_source(
                 source,
                 temporary_root / "build-b",
-                SYNTHETIC_PACKAGE_VERSION,
+                package_version,
                 foundation_root,
-                synthetic_identity,
+                release_identity,
             )
         for left, right in (
             (first.zip_path, second.zip_path),
@@ -464,6 +511,7 @@ def run_acceptance(
                 package=first.zip_path,
                 target=target,
                 client_id=client_id,
+                client_version=client_version,
                 root=temporary_root / "fake-homes",
             )
             for name, executable in executables.items()
@@ -471,10 +519,16 @@ def run_acceptance(
         shutil.copytree(first.zip_path.parent, output_root)
 
     marker = (
-        "NON-RELEASABLE OFFLINE SYNTHETIC PACKAGE\n"
-        "Client contract: 0.0.0-offline\n"
-        "Stable promotion and employee distribution are forbidden.\n"
-    )
+        (
+            "NON-RELEASABLE OFFLINE SYNTHETIC PACKAGE\n"
+            "Client contract: 0.0.0-offline\n"
+        )
+        if synthetic
+        else (
+            "OFFLINE-ACCEPTED CANDIDATE; NOT A STABLE RELEASE\n"
+            f"Client contract: {client_version}\n"
+        )
+    ) + "Stable promotion and employee distribution are forbidden.\n"
     (output_root / "NON_RELEASABLE.txt").write_text(
         marker,
         encoding="utf-8",
@@ -486,12 +540,19 @@ def run_acceptance(
     }
     report = build_acceptance_report(
         target=target,
-        source=synthetic_identity,
+        source=release_identity,
         foundation=foundation,
         asset=asset,
         matrix=matrix,
+        synthetic=synthetic,
+        client_version=client_version,
     )
-    (output_root / "offline-acceptance.json").write_bytes(
+    evidence_name = (
+        "offline-acceptance.json"
+        if synthetic
+        else "candidate-acceptance.json"
+    )
+    (output_root / evidence_name).write_bytes(
         _json_bytes(report)
     )
     return report
@@ -511,12 +572,14 @@ def main() -> int:
         required=True,
     )
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--candidate-version")
     arguments = parser.parse_args()
     report = run_acceptance(
         repo_root=arguments.repo.resolve(),
         foundation_root=arguments.foundation.resolve(),
         foundation_evidence=arguments.foundation_evidence.resolve(),
         output_root=arguments.output.resolve(),
+        candidate_version=arguments.candidate_version,
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0

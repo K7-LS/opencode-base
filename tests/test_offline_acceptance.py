@@ -71,3 +71,28 @@ def test_offline_workspace_is_adjacent_to_evidence(tmp_path):
 
     assert parent == output.parent.resolve()
     assert parent.is_dir()
+
+
+def test_accepted_client_candidate_report_remains_non_stable():
+    runner = _load_runner()
+    report = runner.build_acceptance_report(
+        target="opencode",
+        source={
+            "repository": "https://github.com/example/opencode-base",
+            "commit": "a" * 40,
+            "tree": "b" * 40,
+            "transformation": "opencode-native-v1",
+        },
+        foundation={"version": "0.2.1", "evidence_sha256": "c" * 64},
+        asset={"sha256": "d" * 64, "bytes": 123},
+        matrix={"pwsh": "PASS", "powershell": "PASS"},
+        synthetic=False,
+        client_version="1.18.7",
+    )
+
+    assert report["CLIENT_CONTRACT"] == "ACCEPTED_BINARY"
+    assert report["CLIENT_BINARY_ACCEPTANCE"] == "PASS"
+    assert report["CANDIDATE_OFFLINE"] == "PASS"
+    assert report["FULL_RELEASE_OPENCODE"] == "NOT_PASS"
+    assert report["NON_RELEASABLE"] is True
+    assert "package_acceptance" not in report

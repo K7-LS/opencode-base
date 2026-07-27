@@ -35,21 +35,21 @@ verification, and zero-model `--version`/`--help` smoke. This is only
 acceptance, provider-neutral acceptance, and the reversible live base canary
 remain required.
 
-## Historical offline integration acceptance
+## Offline candidate acceptance
 
-The non-releasable runner temporarily overlays client version
-`0.0.0-offline` only inside an exported clean commit. Its transformation ID is
-deliberately incompatible with stable release policy. It runs the real pinned
-Foundation engine through `plan/install/doctor/inventory/rollback` in
-PowerShell 7 and 5.1, including current-user environment apply/restore:
+With an accepted exact client binary, the runner exports a clean commit,
+builds the candidate twice, and runs the real pinned Foundation engine through
+`plan/install/doctor/inventory/rollback` in PowerShell 7 and 5.1, including
+current-user environment apply/restore:
 
 ```powershell
 py -3.12 .\tools\run_offline_acceptance.py `
   --foundation ..\llm-foundation-installer\.work\acceptance\engine-ps7 `
   --foundation-evidence ..\llm-foundation-installer\dist\foundation-acceptance.json `
-  --output .\dist\offline-acceptance
+  --candidate-version 0.1.0 `
+  --output .\dist\candidate-0.1.0
 ```
 
-This pre-client runner produced the existing synthetic evidence but is retired
-once the real client contract is accepted. It can never create
-`package-acceptance.json` or replace provider/client canaries.
+This proves deterministic candidate packaging and fake-home preservation, but
+it remains non-releasable and can never create `package-acceptance.json` or
+replace provider/client canaries.
