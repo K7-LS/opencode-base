@@ -2,7 +2,7 @@
   "schema_version": 1,
   "target": "opencode",
   "TARGET_IMPLEMENTATION": "IN_PROGRESS",
-  "OFFLINE_FOUNDATION_INTEGRATION": "NOT_RUN",
+  "OFFLINE_FOUNDATION_INTEGRATION": "PASS",
   "PROVIDER_NEUTRAL_ACCEPTANCE": "NOT_RUN",
   "OPENCODE_CANARY": "NOT_RUN",
   "FULL_RELEASE_OPENCODE": "NOT_PASS",
@@ -13,7 +13,6 @@
   "blocked_by": [
     "FULL_RELEASE_CODEX is not PASS",
     "the exact supported OpenCode version is not accepted",
-    "real Foundation package acceptance on Windows and WSL is not run",
     "Windows-native and WSL modes require separate acceptance",
     "OpenCode is not installed on the current hub, so live canary is not available",
     "provider-neutral acceptance is not run"
