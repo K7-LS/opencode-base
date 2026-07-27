@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "target": "opencode",
+  "repository": "https://github.com/daniileliseev1337/opencode-base",
+  "transformation": "opencode-native-v1",
+  "tag_prefix": "opencode-v",
+  "client": {
+    "id": "opencode",
+    "supported_version": null,
+    "acceptance": "NOT_ACCEPTED"
+  },
+  "paths": {
+    "install_root": ".config/opencode",
+    "hot_source": "AGENTS.md",
+    "hot_destination": ".config/opencode/AGENTS.md",
+    "config_source": "runtime/opencode.json",
+    "config_destination": ".config/opencode/opencode.json"
+  },
+  "environment": {
+    "scope": "current-user",
+    "set": [
+      {
+        "name": "OPENCODE_DISABLE_CLAUDE_CODE",
+        "value": "1"
+      }
+    ]
+  }
+}

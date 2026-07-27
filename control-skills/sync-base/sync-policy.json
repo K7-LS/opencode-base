@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "target": "opencode",
+  "repository": "daniileliseev1337/opencode-base",
+  "tag_prefix": "opencode-v",
+  "transformation": "opencode-native-v1",
+  "install_root": ".config/opencode",
+  "client": {
+    "id": "opencode",
+    "command": [
+      "opencode",
+      "--version"
+    ],
+    "acceptance": "NOT_ACCEPTED",
+    "version_pattern": null
+  },
+  "evidence": {
+    "style": "verdicts",
+    "required_verdicts": [
+      "FULL_RELEASE_OPENCODE",
+      "RELEASE_INTEGRITY"
+    ],
+    "program_release": "3/3"
+  }
+}

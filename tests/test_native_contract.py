@@ -1,0 +1,264 @@
+from __future__ import annotations
+
+import json
+import importlib.util
+import os
+import re
+import shutil
+import subprocess
+from pathlib import Path
+
+import pytest
+
+
+ROOT = Path(__file__).resolve().parents[1]
+EXPECTED_AGENTS = {
+    "audit-rd-section",
+    "auditor",
+    "designer",
+    "excel-validator",
+    "expertiza-responder",
+    "id-engineer",
+    "kp-writer",
+    "letter-writer",
+    "norm-lookup",
+    "pdf-reviewer",
+    "pto-engineer",
+    "pyrevit-engineer",
+    "rd-coordinator",
+    "smetchik",
+    "snabzhenets",
+    "word-checker",
+}
+
+
+def _frontmatter(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    assert text.startswith("---\n"), path
+    marker = text.find("\n---\n", 4)
+    assert marker > 0, path
+    return text[4:marker]
+
+
+def _scalar(frontmatter: str, key: str) -> str:
+    match = re.search(rf"(?m)^{re.escape(key)}:\s*(.+?)\s*$", frontmatter)
+    assert match, f"missing {key}"
+    return match.group(1).strip().strip("\"'")
+
+
+def test_opencode_hot_layer_is_native_compact_and_provider_neutral():
+    hot = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    assert len(hot.encode("utf-8")) <= 4500
+    assert ".claude" not in hot.lower()
+    assert ".codex" not in hot.lower()
+    assert "kimi" not in hot.lower()
+    assert "простой разговор" in hot.lower()
+    assert "provider" in hot.lower()
+
+    config = json.loads(
+        (ROOT / "runtime" / "opencode.json").read_text(encoding="utf-8")
+    )
+    assert config["share"] == "disabled"
+    assert config["permission"]["skill"] == "allow"
+    assert "model" not in config
+    assert "small_model" not in config
+    assert "provider" not in config
+
+
+def test_opencode_runtime_surfaces_do_not_use_other_client_tool_vocabulary():
+    surfaces = [
+        ROOT / "AGENTS.md",
+        *(ROOT / "agents").glob("*.md"),
+        *(ROOT / "commands").glob("*.md"),
+        *(ROOT / "control-skills").rglob("*"),
+        *(ROOT / "runtime").rglob("*"),
+    ]
+    text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in surfaces
+        if path.is_file()
+    ).lower()
+    for forbidden in ("askuserquestion", ".claude", ".codex", "kimi"):
+        assert forbidden not in text
+
+
+def test_opencode_has_exact_native_agent_and_skill_catalogs():
+    agents = {path.stem for path in (ROOT / "agents").glob("*.md")}
+    skills = {
+        path.parent.name
+        for path in (ROOT / "skills").glob("*/SKILL.md")
+    }
+    assert agents == EXPECTED_AGENTS
+    assert len(skills) == 37
+
+    for path in sorted((ROOT / "agents").glob("*.md")):
+        frontmatter = _frontmatter(path)
+        assert _scalar(frontmatter, "mode") == "subagent"
+        assert len(_scalar(frontmatter, "description")) <= 240, path
+        assert not re.search(r"(?m)^model:", frontmatter), path
+
+    for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
+        frontmatter = _frontmatter(path)
+        assert _scalar(frontmatter, "name") == path.parent.name
+        assert 1 <= len(_scalar(frontmatter, "description")) <= 180, path
+
+    catalog = json.loads(
+        (ROOT / "catalog" / "agents.json").read_text(encoding="utf-8")
+    )
+    assert all((ROOT / row["source"]).is_file() for row in catalog)
+
+
+def test_opencode_managed_surface_is_native_and_preserves_state():
+    managed = json.loads(
+        (ROOT / "runtime" / "managed-surface.json").read_text(encoding="utf-8")
+    )
+    all_paths = managed["replace_files"] + managed["exact_directories"]
+    assert all(path.startswith(".config/opencode/") for path in all_paths)
+    assert not [path for path in all_paths if ".claude" in path or ".codex" in path]
+
+    preserved = set(managed["preserved_paths"])
+    assert ".local/share/opencode" in preserved
+    assert ".config/opencode/auth.json" in preserved
+    assert ".config/opencode/plugins" in preserved
+
+    runtime_text = "\n".join(
+        path.read_text(encoding="utf-8").lower()
+        for path in (ROOT / "runtime").rglob("*")
+        if path.is_file()
+    )
+    for forbidden in ("auto-push", "feedback-pending", "session-report", "http.post"):
+        assert forbidden not in runtime_text
+
+    release = json.loads(
+        (ROOT / "runtime" / "release-contract.json").read_text(encoding="utf-8")
+    )
+    assert release["client"]["acceptance"] == "NOT_ACCEPTED"
+    assert release["client"]["supported_version"] is None
+    assert release["environment"] == {
+        "scope": "current-user",
+        "set": [
+            {
+                "name": "OPENCODE_DISABLE_CLAUDE_CODE",
+                "value": "1",
+            }
+        ],
+    }
+    connection = ROOT / "runtime" / "connection.ps1"
+    assert connection.is_file()
+    hook = (
+        ROOT / "runtime" / "hooks" / "check-release.ps1"
+    ).read_text(encoding="utf-8")
+    assert "connection.ps1" in hook
+    assert "Invoke-WithLlmConnection" in hook
+
+
+def test_opencode_release_status_stays_fail_closed_before_canary():
+    status = json.loads((ROOT / "STATUS.json").read_text(encoding="utf-8"))
+    assert status["TARGET_IMPLEMENTATION"] == "IN_PROGRESS"
+    assert status["OPENCODE_CANARY"] == "NOT_RUN"
+    assert status["FULL_RELEASE_OPENCODE"] == "NOT_PASS"
+
+
+def test_opencode_static_token_budget_passes_without_claiming_live_ab():
+    path = ROOT / "tools" / "token_audit.py"
+    spec = importlib.util.spec_from_file_location("opencode_token_audit", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    report = module.audit_static_context(ROOT, "opencode")
+    assert report["results"]["STATIC_TOKEN_ACCEPTANCE"] == "PASS"
+    assert report["results"]["base_controlled_startup_reduction"] >= 0.70
+    assert report["results"]["MATCHED_AB"] == "NOT_RUN"
+    assert report["candidate"]["cold_payload_in_startup"] is False
+    assert report["candidate"]["surfaces"]["agents_discovery"]["count"] == 16
+    assert report["candidate"]["surfaces"]["skills_discovery"]["count"] == 38
+
+
+def test_opencode_llm_interop_documentation_matches_bridge_cli():
+    skill = (
+        ROOT / "skills" / "llm-interop" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    assert "--task .llm-interop/task.json" in skill
+    assert "references/task.schema.json" in skill
+    assert "--custom agent" not in skill
+    assert "custom agent.schema.json" not in skill
+
+
+@pytest.mark.parametrize(
+    "executable",
+    [
+        value
+        for value in (
+            shutil.which("pwsh"),
+            shutil.which("powershell.exe"),
+        )
+        if value
+    ],
+)
+def test_opencode_sync_runtime_is_native_and_blocks_before_canary(
+    executable, tmp_path
+):
+    control = ROOT / "control-skills" / "sync-base"
+    policy = json.loads(
+        (control / "sync-policy.json").read_text(encoding="utf-8")
+    )
+    assert policy["target"] == "opencode"
+    assert policy["client"]["acceptance"] == "NOT_ACCEPTED"
+    script = control / "tools" / "sync_base.ps1"
+    assert script.is_file()
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    result = subprocess.run(
+        [
+            executable,
+            "-NoProfile",
+            "-File",
+            str(script),
+            "-PolicyPath",
+            str(control / "sync-policy.json"),
+            "-TargetHome",
+            str(fake_home),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 2
+    combined = result.stdout + result.stderr
+    assert "client release contract is not accepted" in combined.lower()
+    assert "github cli" not in combined.lower()
+
+
+@pytest.mark.parametrize(
+    "executable",
+    [
+        value
+        for value in (
+            shutil.which("pwsh"),
+            shutil.which("powershell.exe"),
+        )
+        if value
+    ],
+)
+def test_opencode_session_hook_is_silent_without_an_installed_base(
+    executable, tmp_path
+):
+    result = subprocess.run(
+        [
+            executable,
+            "-NoProfile",
+            "-File",
+            str(ROOT / "runtime" / "hooks" / "check-release.ps1"),
+        ],
+        env={**os.environ, "USERPROFILE": str(tmp_path)},
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0
+    assert not (result.stdout + result.stderr).strip()

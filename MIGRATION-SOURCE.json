@@ -7,6 +7,11 @@
     "commit": "d263065d902000a032c87bd31175889168f616bc",
     "tree": "7e3fda8ff712e22bb1d5a2bb533bd7a6998cc474"
   },
-  "migration_status": "NOT_STARTED",
+  "migration_status": "IN_PROGRESS",
+  "ported_inventory": {
+    "agents": 16,
+    "skills": 37,
+    "commands": 3
+  },
   "legacy_repository_deleted": false
 }

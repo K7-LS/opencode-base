@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "scope": "current-user",
+  "required": {
+    "OPENCODE_DISABLE_CLAUDE_CODE": "1"
+  },
+  "reason": "Prevent compatibility fallback from discovering a second copy of global rules and skills."
+}
