@@ -60,3 +60,13 @@ def test_offline_contract_overlay_is_explicit_and_non_releasable():
     assert report["FOUNDATION_FAKE_HOME"] == "PASS"
     assert report["FULL_RELEASE_OPENCODE"] == "NOT_PASS"
     assert "package_acceptance" not in report
+
+
+def test_offline_workspace_is_adjacent_to_evidence(tmp_path):
+    runner = _load_runner()
+    output = tmp_path / "dist" / "offline-acceptance"
+
+    parent = runner.acceptance_workspace_parent(output)
+
+    assert parent == output.parent.resolve()
+    assert parent.is_dir()

@@ -62,6 +62,12 @@ def make_synthetic_identity(
     return result
 
 
+def acceptance_workspace_parent(output_root: Path) -> Path:
+    parent = output_root.parent.resolve()
+    parent.mkdir(parents=True, exist_ok=True)
+    return parent
+
+
 def build_acceptance_report(
     *,
     target: str,
@@ -399,7 +405,8 @@ def run_acceptance(
     synthetic_identity = make_synthetic_identity(identity)
 
     with tempfile.TemporaryDirectory(
-        prefix=f"{target}-offline-acceptance-"
+        prefix=f"{target}-offline-acceptance-",
+        dir=acceptance_workspace_parent(output_root),
     ) as temporary:
         temporary_root = Path(temporary)
         with release_builder._export_committed_tree(
