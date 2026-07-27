@@ -31,3 +31,21 @@ Current verdict: `FULL_RELEASE_OPENCODE: NOT_PASS`.
 
 The exact supported OpenCode version, real Windows/WSL Foundation acceptance,
 provider-neutral acceptance, and a live OpenCode canary remain required.
+
+## Offline integration acceptance
+
+The non-releasable runner temporarily overlays client version
+`0.0.0-offline` only inside an exported clean commit. Its transformation ID is
+deliberately incompatible with stable release policy. It runs the real pinned
+Foundation engine through `plan/install/doctor/inventory/rollback` in
+PowerShell 7 and 5.1, including current-user environment apply/restore:
+
+```powershell
+py -3.12 .\tools\run_offline_acceptance.py `
+  --foundation ..\llm-foundation-installer\.work\acceptance\engine-ps7 `
+  --foundation-evidence ..\llm-foundation-installer\dist\foundation-acceptance.json `
+  --output .\dist\offline-acceptance
+```
+
+This can prove package integration and preserved-data behavior, but can never
+create `package-acceptance.json` or replace provider/client canaries.
