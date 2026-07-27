@@ -46,7 +46,8 @@ def test_offline_contract_overlay_is_explicit_and_non_releasable():
     )
 
     assert contract == original
-    assert original["client"]["acceptance"] == "NOT_ACCEPTED"
+    assert original["client"]["acceptance"] == "PASS"
+    assert original["client"]["supported_version"] == "1.18.7"
     assert synthetic["client"] == {
         "id": original["client"]["id"],
         "supported_version": "0.0.0-offline",

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "target": "opencode",
+  "verdict": "PASS",
+  "client": {
+    "id": "opencode",
+    "version": "1.18.7"
+  },
+  "distribution": {
+    "method": "npm",
+    "package_id": "opencode-ai",
+    "package_version": "1.18.7",
+    "scope": "current-user",
+    "source": "https://www.npmjs.com/package/opencode-ai"
+  },
+  "binary": {
+    "sha256": "b7b469b83cc3561e5129a1803b746f7e2c1974297909f5b346398dc9c56a477e",
+    "bytes": 174043016,
+    "authenticode_status": "Valid",
+    "signer": "Anomaly Innovations, Inc",
+    "issuer": "Microsoft ID Verified CS AOC CA 04",
+    "timestamped": true
+  },
+  "runtime_smoke": {
+    "version_command": [
+      "opencode",
+      "--version"
+    ],
+    "version_output": "1.18.7",
+    "version_exit_code": 0,
+    "help_exit_code": 0,
+    "model_requests": 0,
+    "provider_login": "NOT_RUN"
+  },
+  "limitations": [
+    "This accepts only the exact client binary and zero-model CLI smoke.",
+    "It does not prove provider login, model runtime, WSL, or base canary behavior."
+  ]
+}

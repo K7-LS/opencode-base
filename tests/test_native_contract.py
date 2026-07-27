@@ -150,8 +150,20 @@ def test_opencode_managed_surface_is_native_and_preserves_state():
     release = json.loads(
         (ROOT / "runtime" / "release-contract.json").read_text(encoding="utf-8")
     )
-    assert release["client"]["acceptance"] == "NOT_ACCEPTED"
-    assert release["client"]["supported_version"] is None
+    assert release["client"]["acceptance"] == "PASS"
+    assert release["client"]["supported_version"] == "1.18.7"
+    client_evidence = json.loads(
+        (ROOT / "runtime" / "client-acceptance.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert client_evidence["verdict"] == "PASS"
+    assert client_evidence["client"] == {
+        "id": "opencode",
+        "version": "1.18.7",
+    }
+    assert client_evidence["binary"]["authenticode_status"] == "Valid"
+    assert client_evidence["runtime_smoke"]["model_requests"] == 0
     assert release["environment"] == {
         "scope": "current-user",
         "set": [
@@ -228,7 +240,7 @@ def test_opencode_llm_interop_documentation_matches_bridge_cli():
         if value
     ],
 )
-def test_opencode_sync_runtime_is_native_and_blocks_before_canary(
+def test_opencode_sync_runtime_is_native_and_client_version_pinned(
     executable, tmp_path
 ):
     control = ROOT / "control-skills" / "sync-base"
@@ -236,7 +248,10 @@ def test_opencode_sync_runtime_is_native_and_blocks_before_canary(
         (control / "sync-policy.json").read_text(encoding="utf-8")
     )
     assert policy["target"] == "opencode"
-    assert policy["client"]["acceptance"] == "NOT_ACCEPTED"
+    assert policy["client"]["acceptance"] == "PASS"
+    assert policy["client"]["version_pattern"] == (
+        r"(?<version>1\.18\.7)"
+    )
     script = control / "tools" / "sync_base.ps1"
     assert script.is_file()
     fake_home = tmp_path / "home"
@@ -251,6 +266,7 @@ def test_opencode_sync_runtime_is_native_and_blocks_before_canary(
             str(control / "sync-policy.json"),
             "-TargetHome",
             str(fake_home),
+            "-LibraryMode",
         ],
         capture_output=True,
         text=True,
@@ -258,9 +274,9 @@ def test_opencode_sync_runtime_is_native_and_blocks_before_canary(
         check=False,
         timeout=30,
     )
-    assert result.returncode == 2
+    assert result.returncode == 0
     combined = result.stdout + result.stderr
-    assert "client release contract is not accepted" in combined.lower()
+    assert "client release contract is not accepted" not in combined.lower()
     assert "github cli" not in combined.lower()
 
 

@@ -63,6 +63,95 @@ def _load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_client_acceptance(
+    repo_root: Path,
+    contract: dict[str, object],
+) -> dict[str, object]:
+    evidence = _load_json(repo_root / "runtime" / "client-acceptance.json")
+    required = {
+        "schema_version",
+        "target",
+        "verdict",
+        "client",
+        "distribution",
+        "binary",
+        "runtime_smoke",
+        "limitations",
+    }
+    client = contract["client"]
+    distribution = evidence.get("distribution")
+    binary = evidence.get("binary")
+    smoke = evidence.get("runtime_smoke")
+    if (
+        not isinstance(evidence, dict)
+        or set(evidence) != required
+        or evidence.get("schema_version") != 1
+        or evidence.get("target") != contract["target"]
+        or evidence.get("verdict") != "PASS"
+        or evidence.get("client")
+        != {
+            "id": client["id"],
+            "version": client["supported_version"],
+        }
+        or not isinstance(distribution, dict)
+        or set(distribution)
+        != {
+            "method",
+            "package_id",
+            "package_version",
+            "scope",
+            "source",
+        }
+        or distribution["method"] not in {"winget", "npm"}
+        or distribution["package_version"] != client["supported_version"]
+        or distribution["scope"] != "current-user"
+        or not all(
+            isinstance(distribution[name], str) and distribution[name]
+            for name in ("package_id", "source")
+        )
+        or not isinstance(binary, dict)
+        or set(binary)
+        != {
+            "sha256",
+            "bytes",
+            "authenticode_status",
+            "signer",
+            "issuer",
+            "timestamped",
+        }
+        or not isinstance(binary["sha256"], str)
+        or re.fullmatch(r"[0-9a-f]{64}", binary["sha256"]) is None
+        or not isinstance(binary["bytes"], int)
+        or binary["bytes"] <= 0
+        or binary["authenticode_status"] != "Valid"
+        or not isinstance(binary["signer"], str)
+        or not binary["signer"]
+        or not isinstance(binary["issuer"], str)
+        or not binary["issuer"]
+        or binary["timestamped"] is not True
+        or not isinstance(smoke, dict)
+        or set(smoke)
+        != {
+            "version_command",
+            "version_output",
+            "version_exit_code",
+            "help_exit_code",
+            "model_requests",
+            "provider_login",
+        }
+        or not isinstance(smoke["version_command"], list)
+        or not smoke["version_command"]
+        or smoke["version_exit_code"] != 0
+        or smoke["help_exit_code"] != 0
+        or smoke["model_requests"] != 0
+        or smoke["provider_login"] != "NOT_RUN"
+        or not isinstance(evidence["limitations"], list)
+        or not evidence["limitations"]
+    ):
+        raise ValueError("client binary acceptance evidence differs")
+    return evidence
+
+
 def load_release_contract(repo_root: Path) -> dict[str, object]:
     contract = _load_json(repo_root / "runtime" / "release-contract.json")
     required = {
@@ -93,7 +182,7 @@ def load_release_contract(repo_root: Path) -> dict[str, object]:
         raise ValueError("client release contract schema differs")
     if client["acceptance"] != "PASS":
         raise ValueError(
-            f"{target} client contract is not accepted; canary is required"
+            f"{target} client binary contract is not accepted"
         )
     supported = client["supported_version"]
     if not isinstance(supported, str) or not CLIENT_VERSION.fullmatch(supported):
@@ -122,6 +211,7 @@ def load_release_contract(repo_root: Path) -> dict[str, object]:
         raise ValueError("OpenCode isolation environment is required")
     if target == "claude" and environment["set"]:
         raise ValueError("Claude release must not mutate user environment")
+    load_client_acceptance(repo_root, contract)
     return contract
 
 

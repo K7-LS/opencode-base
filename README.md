@@ -29,10 +29,13 @@ has not run.
 
 Current verdict: `FULL_RELEASE_OPENCODE: NOT_PASS`.
 
-The exact supported OpenCode version, real Windows/WSL Foundation acceptance,
-provider-neutral acceptance, and a live OpenCode canary remain required.
+OpenCode `1.18.7` is pinned after an exact npm install, valid Authenticode
+verification, and zero-model `--version`/`--help` smoke. This is only
+`CLIENT_BINARY_ACCEPTANCE: PASS`; provider login, model runtime, WSL
+acceptance, provider-neutral acceptance, and the reversible live base canary
+remain required.
 
-## Offline integration acceptance
+## Historical offline integration acceptance
 
 The non-releasable runner temporarily overlays client version
 `0.0.0-offline` only inside an exported clean commit. Its transformation ID is
@@ -47,5 +50,6 @@ py -3.12 .\tools\run_offline_acceptance.py `
   --output .\dist\offline-acceptance
 ```
 
-This can prove package integration and preserved-data behavior, but can never
-create `package-acceptance.json` or replace provider/client canaries.
+This pre-client runner produced the existing synthetic evidence but is retired
+once the real client contract is accepted. It can never create
+`package-acceptance.json` or replace provider/client canaries.

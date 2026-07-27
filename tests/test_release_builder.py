@@ -62,15 +62,38 @@ def _accepted_source(tmp_path: Path) -> tuple[Path, dict[str, object]]:
     )
     path = source / "runtime" / "release-contract.json"
     contract = json.loads(path.read_text(encoding="utf-8"))
-    contract["client"]["supported_version"] = "9.9.9-test"
-    contract["client"]["acceptance"] = "PASS"
-    _json(path, contract)
     return source, contract
 
 
-def test_release_builder_refuses_unaccepted_client_contract():
-    with pytest.raises(ValueError, match="canary"):
-        release_builder.load_release_contract(ROOT)
+def test_release_builder_refuses_unaccepted_client_contract(tmp_path: Path):
+    source, _ = _accepted_source(tmp_path)
+    path = source / "runtime" / "release-contract.json"
+    contract = json.loads(path.read_text(encoding="utf-8"))
+    contract["client"]["supported_version"] = None
+    contract["client"]["acceptance"] = "NOT_ACCEPTED"
+    _json(path, contract)
+    with pytest.raises(ValueError, match="binary contract"):
+        release_builder.load_release_contract(source)
+
+
+@pytest.mark.parametrize("tamper", ["version", "signature", "model_request"])
+def test_release_builder_rejects_tampered_client_binary_evidence(
+    tmp_path: Path,
+    tamper: str,
+):
+    source, _ = _accepted_source(tmp_path)
+    path = source / "runtime" / "client-acceptance.json"
+    evidence = json.loads(path.read_text(encoding="utf-8"))
+    if tamper == "version":
+        evidence["client"]["version"] = "9.9.9"
+    elif tamper == "signature":
+        evidence["binary"]["authenticode_status"] = "NotSigned"
+    else:
+        evidence["runtime_smoke"]["model_requests"] = 1
+    _json(path, evidence)
+
+    with pytest.raises(ValueError, match="binary acceptance evidence"):
+        release_builder.load_release_contract(source)
 
 
 def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
@@ -101,7 +124,7 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
     assert first.manifest["channel"] == "candidate"
     assert first.manifest["client"] == {
         "id": contract["client"]["id"],
-        "supported_version": "9.9.9-test",
+        "supported_version": "1.18.7",
     }
 
     root = contract["paths"]["install_root"]
