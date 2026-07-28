@@ -82,6 +82,17 @@ def test_opencode_runtime_surfaces_do_not_use_other_client_tool_vocabulary():
         assert forbidden not in text
 
 
+def test_skill_development_uses_material_learning_not_session_ritual():
+    text = (
+        ROOT / "skills" / "skill-development" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    lowered = text.lower()
+    assert "обновляй скиллы каждую сессию" not in lowered
+    assert "конец сессии — спросил" not in lowered
+    assert "material reusable learning" in lowered
+    assert len(text.split()) <= 500
+
+
 def test_opencode_has_exact_native_agent_and_skill_catalogs():
     agents = {path.stem for path in (ROOT / "agents").glob("*.md")}
     skills = {
