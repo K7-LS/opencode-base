@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,3 +103,35 @@ def test_accepted_client_candidate_report_remains_non_stable():
     assert report["evidence_body_sha256"] == runner.evidence_body_sha256(
         report
     )
+
+
+def test_foundation_commands_allow_slow_windows_install(
+    monkeypatch, tmp_path
+):
+    runner = _load_runner()
+    observed: dict[str, object] = {}
+
+    def fake_run(arguments, **kwargs):
+        observed["arguments"] = arguments
+        observed["timeout"] = kwargs["timeout"]
+        return SimpleNamespace(
+            returncode=0,
+            stdout='{"status":"PASS"}\n',
+            stderr="",
+        )
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    result = runner._run_foundation(
+        executable="pwsh",
+        foundation_script=tmp_path / "foundation.ps1",
+        command="install",
+        target="opencode",
+        client_id="opencode",
+        client_version="1.18.7",
+        package=tmp_path / "candidate.zip",
+        home=tmp_path / "home",
+    )
+
+    assert result == {"status": "PASS"}
+    assert observed["timeout"] >= 180

@@ -218,7 +218,7 @@ def _run_foundation(
         text=True,
         encoding="utf-8",
         check=False,
-        timeout=60,
+        timeout=180,
         env=environment,
     )
     if result.returncode != 0:
