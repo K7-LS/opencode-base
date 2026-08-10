@@ -12,7 +12,7 @@
       "--version"
     ],
     "acceptance": "PASS",
-    "version_pattern": "(?<version>1\\.18\\.7)"
+    "version_pattern": "^(?:OpenCode )?(?<version>[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?)$"
   },
   "evidence": {
     "style": "verdicts",

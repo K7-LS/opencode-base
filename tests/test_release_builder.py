@@ -140,6 +140,33 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
         "id": contract["client"]["id"],
         "supported_version": "1.18.7",
     }
+    session = first.manifest["session_tools_asset"]
+    assert session["name"] == "session-tools-opencode-1.2.3.zip"
+    assert release_builder.release_binding_from_manifest(first.manifest)["session_tools_asset"] == session
+    tampered_binding = dict(first.manifest)
+    tampered_binding["session_tools_asset"] = {
+        **session,
+        "name": "session-tools-opencode-9.9.9.zip",
+    }
+    with pytest.raises(ValueError, match="release version"):
+        release_builder.release_binding_from_manifest(tampered_binding)
+    session_path = first.zip_path.parent / session["name"]
+    with zipfile.ZipFile(session_path) as archive:
+        session_manifest_bytes = archive.read("session-tools-manifest.json")
+        session_manifest = json.loads(session_manifest_bytes)
+        session_payload = {
+            name: archive.read(name)
+            for name in archive.namelist()
+            if name != "session-tools-manifest.json"
+        }
+    assert session_manifest == {
+        "schema_version": 1,
+        "target": first.manifest["target"],
+        "release_tag": first.manifest["tag"],
+        "base_version": first.manifest["version"],
+        "tools": session_manifest["tools"],
+    }
+    assert session["manifest_sha256"] == hashlib.sha256(session_manifest_bytes).hexdigest()
 
     root = contract["paths"]["install_root"]
     hot = contract["paths"]["hot_destination"]
@@ -154,6 +181,9 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
         assert f"{root}/base/components.lock.json" in names
         assert f"{root}/base/foundation/0.1.0/foundation.ps1" in names
         assert f"{root}/skills/sync-base/SKILL.md" in names
+        assert f"{root}/skills/ru-writing-style/SKILL.md" not in names
+        assert "session-tools-baseline/tools/ru-writing-style/SKILL.md" in names
+        assert "session-tools-baseline/session-tools-manifest.json" in names
         assert len(
             [
                 name
@@ -187,6 +217,30 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
             "preserved_paths": managed["preserved_paths"],
         }
         assert package["environment"] == contract["environment"]
+        assert package["session_tools_baseline"] == {
+            "manifest_path": "session-tools-baseline/session-tools-manifest.json",
+            "manifest_sha256": session["manifest_sha256"],
+            "tools": [
+                {
+                    "id": "ru-writing-style",
+                    "files": [
+                        {
+                            "path": "SKILL.md",
+                            "sha256": "a20f25a852eaff976c9db90929c94f5658acb3a71eb264479f6d354e04a10938",
+                            "bytes": 20003,
+                        }
+                    ],
+                }
+            ],
+            "retired_tool_ids": [],
+        }
+        baseline_manifest_bytes = archive.read(
+            package["session_tools_baseline"]["manifest_path"]
+        )
+        assert baseline_manifest_bytes == session_manifest_bytes
+        assert package["session_tools_baseline"]["tools"] == session_manifest["tools"]
+        for name, payload in session_payload.items():
+            assert archive.read(f"session-tools-baseline/{name}") == payload
         assert package["sync_policy"] == {
             "direction": "hub-to-consumer",
             "consumer_feedback_upload": False,
@@ -200,7 +254,7 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
     assert len(lock["components"]["skills"]) == 37
     assert len(lock["components"]["control_skills"]) == 1
     assert len(lock["components"]["commands"]) == 3
-    assert len(lock["components"]["cold"]) == 22
+    assert len(lock["components"]["cold"]) == 23
 
     evidence = tmp_path / "candidate-evidence.json"
     evidence.write_text('{"CANDIDATE_OFFLINE":"PASS"}\n', encoding="utf-8")

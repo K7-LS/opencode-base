@@ -11,6 +11,7 @@
   "blocked_by": [
     "the approved OpenAI OAuth provider marker has not run",
     "the reversible live base canary for OpenCode 1.18.7 has not run",
-    "immutable release integrity has not been verified"
+    "immutable release integrity has not been verified",
+    "direct OpenCode launch has no confirmed stable pre-discovery SessionStart hook; use the managed launcher for same-session tools"
   ]
 }
