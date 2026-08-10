@@ -135,6 +135,58 @@ def test_session_tools_rejects_windows_drive_and_asset_name_traversal():
 
 
 @pytest.mark.parametrize(
+    ("manifest_field", "record_field"),
+    [
+        ("schema_version", None),
+        ("file_bytes", None),
+        (None, "bytes"),
+        (None, "tool_count"),
+        (None, "file_count"),
+    ],
+)
+def test_session_tools_rejects_boolean_numeric_manifest_fields(
+    manifest_field: str | None,
+    record_field: str | None,
+):
+    payload = b"x"
+    if manifest_field is not None:
+        manifest = json.loads(
+            _manifest(
+                files=[
+                    {
+                        "path": "SKILL.md",
+                        "sha256": _sha256(payload),
+                        "bytes": len(payload),
+                    }
+                ]
+            )
+        )
+        if manifest_field == "file_bytes":
+            manifest["tools"][0]["files"][0]["bytes"] = True
+            error = "file size"
+        else:
+            manifest[manifest_field] = True
+            error = "identity"
+        with pytest.raises(ValueError, match=error):
+            session_tools.validate_session_tools_manifest(
+                (json.dumps(manifest) + "\n").encode("utf-8")
+            )
+        return
+    record = {
+        "name": "session-tools-opencode-0.1.2.zip",
+        "sha256": "a" * 64,
+        "bytes": 1,
+        "manifest_sha256": "b" * 64,
+        "tool_count": 1,
+        "file_count": 1,
+    }
+    assert record_field is not None
+    record[record_field] = True
+    with pytest.raises(ValueError, match="record"):
+        session_tools.validate_session_tools_asset_record(record)
+
+
+@pytest.mark.parametrize(
     ("name", "manifest", "entries", "error"),
     [
         (

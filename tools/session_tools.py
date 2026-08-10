@@ -86,7 +86,9 @@ def _validate_manifest(value: object) -> dict[str, object]:
     }:
         raise ValueError("session tools manifest schema differs")
     if (
-        value["schema_version"] != 1
+        not isinstance(value["schema_version"], int)
+        or isinstance(value["schema_version"], bool)
+        or value["schema_version"] != 1
         or value["target"] != "opencode"
         or not isinstance(value["release_tag"], str)
         or not isinstance(value["base_version"], str)
