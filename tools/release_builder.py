@@ -614,6 +614,11 @@ def build_release_from_source(
         exclude=set((repo_root / "skills" / "ru-writing-style").rglob("*")),
     )
     _add_tree(entries, repo_root / "control-skills", f"{install_root}/skills")
+    _add(
+        entries,
+        f"{install_root}/skills/sync-base/runtime/connection.ps1",
+        (repo_root / "runtime" / "connection.ps1").read_bytes(),
+    )
     _add_tree(entries, repo_root / "commands", f"{install_root}/commands")
     _add_tree(entries, repo_root / "cold", f"{install_root}/base/cold")
     _add_tree(
