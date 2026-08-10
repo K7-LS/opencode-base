@@ -167,7 +167,7 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
                 for name in names
                 if name.startswith(f"{root}/skills/") and name.endswith("/SKILL.md")
             ]
-        ) == 38
+        ) == 39
         assert len(
             [
                 name
@@ -197,10 +197,10 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
 
     lock = json.loads(first.component_lock_path.read_text(encoding="utf-8"))
     assert len(lock["components"]["agents"]) == 16
-    assert len(lock["components"]["skills"]) == 37
+    assert len(lock["components"]["skills"]) == 38
     assert len(lock["components"]["control_skills"]) == 1
     assert len(lock["components"]["commands"]) == 3
-    assert len(lock["components"]["cold"]) == 22
+    assert len(lock["components"]["cold"]) == 23
 
     evidence = tmp_path / "candidate-evidence.json"
     evidence.write_text('{"CANDIDATE_OFFLINE":"PASS"}\n', encoding="utf-8")

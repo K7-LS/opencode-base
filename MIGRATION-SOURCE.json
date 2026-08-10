@@ -53,6 +53,7 @@
       "revit-family-generator-ru",
       "revit-testbed",
       "ru-gov-access",
+      "ru-writing-style",
       "skill-development",
       "spec-writer",
       "stroy-formatting",
@@ -86,6 +87,7 @@
       "memory/reference_docx_editing_failures.md",
       "memory/reference_hybrid_ai_pipeline.md",
       "memory/reference_inkscape_pdf_editing.md",
+      "memory/reference_officecli.md",
       "chains/docx-from-template.md",
       "chains/pdf-scan-extract.md",
       "chains/upd-to-spec-reconcile.md"

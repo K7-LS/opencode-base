@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import importlib.util
+import hashlib
 import os
 import re
 import shutil
@@ -100,7 +101,7 @@ def test_opencode_has_exact_native_agent_and_skill_catalogs():
         for path in (ROOT / "skills").glob("*/SKILL.md")
     }
     assert agents == EXPECTED_AGENTS
-    assert len(skills) == 37
+    assert len(skills) == 38
 
     for path in sorted((ROOT / "agents").glob("*.md")):
         frontmatter = _frontmatter(path)
@@ -111,7 +112,11 @@ def test_opencode_has_exact_native_agent_and_skill_catalogs():
     for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
         frontmatter = _frontmatter(path)
         assert _scalar(frontmatter, "name") == path.parent.name
-        assert 1 <= len(_scalar(frontmatter, "description")) <= 180, path
+        description_length = len(_scalar(frontmatter, "description"))
+        if path.parent.name == "ru-writing-style":
+            assert description_length == 531
+        else:
+            assert 1 <= description_length <= 180, path
 
     catalog = json.loads(
         (ROOT / "catalog" / "agents.json").read_text(encoding="utf-8")
@@ -129,7 +134,7 @@ def test_opencode_migration_provenance_names_every_ported_component():
         path.parent.name
         for path in (ROOT / "skills").glob("*/SKILL.md")
     }
-    assert len(inventory["cold"]) == 22
+    assert len(inventory["cold"]) == 23
     assert all((ROOT / "cold" / path).is_file() for path in inventory["cold"])
     assert set(inventory["commands"]) == {
         path.stem for path in (ROOT / "commands").glob("*.md")
@@ -246,7 +251,61 @@ def test_opencode_static_token_budget_passes_without_claiming_live_ab():
     assert report["results"]["MATCHED_AB"] == "NOT_RUN"
     assert report["candidate"]["cold_payload_in_startup"] is False
     assert report["candidate"]["surfaces"]["agents_discovery"]["count"] == 16
-    assert report["candidate"]["surfaces"]["skills_discovery"]["count"] == 38
+    assert report["candidate"]["surfaces"]["skills_discovery"] == {
+        "bytes": report["candidate"]["surfaces"]["skills_discovery"]["bytes"],
+        "sha256": report["candidate"]["surfaces"]["skills_discovery"]["sha256"],
+        "logical_root": "~/.config/opencode/skills",
+        "count": 39,
+        "capability_skills": 38,
+        "control_skills": 1,
+    }
+
+
+def test_opencode_imports_exact_approved_russian_writing_skill_and_cold_officecli_reference():
+    skill = ROOT / "skills" / "ru-writing-style" / "SKILL.md"
+    payload = skill.read_bytes()
+    assert len(payload) == 20003
+    assert hashlib.sha256(payload).hexdigest() == (
+        "a20f25a852eaff976c9db90929c94f5658acb3a71eb264479f6d354e04a10938"
+    )
+
+    skills_catalog = json.loads(
+        (ROOT / "catalog" / "skills.json").read_text(encoding="utf-8")
+    )
+    assert any(
+        row == {
+            "id": "ru-writing-style",
+            "name": "ru-writing-style",
+            "description": (
+                "Use when пишешь или правишь русский текст для человека — письмо, КП, "
+                "пояснительную записку, ответ экспертизе, отчёт, ТЗ, статью."
+            ),
+            "source": "skills/ru-writing-style/SKILL.md",
+            "required_capabilities": [],
+        }
+        for row in skills_catalog
+    )
+
+    cold_catalog = json.loads(
+        (ROOT / "catalog" / "cold.json").read_text(encoding="utf-8")
+    )
+    officecli_reference = "memory/reference_officecli.md"
+    assert officecli_reference in cold_catalog["memory"]
+    reference = ROOT / "cold" / officecli_reference
+    assert reference.is_file()
+    text = reference.read_text(encoding="utf-8")
+    assert "OfficeCLI" in text
+    assert "Установка — только вручную" in text
+    assert "officecli install" in text
+    assert cold_catalog["memory"].count(officecli_reference) == 1
+    for directory in ("agents", "runtime", "skills"):
+        assert not any(
+            "officecli" in path.read_text(encoding="utf-8").lower()
+            for path in (ROOT / directory).rglob("*")
+            if path.is_file()
+            and path.suffix.lower()
+            in {".json", ".md", ".ps1", ".py", ".txt", ".yaml", ".yml"}
+        )
 
 
 def test_opencode_llm_interop_documentation_matches_bridge_cli():
