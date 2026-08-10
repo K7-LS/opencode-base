@@ -154,6 +154,15 @@ def test_opencode_managed_surface_is_native_and_preserves_state():
     assert ".local/share/opencode" in preserved
     assert ".config/opencode/auth.json" in preserved
     assert ".config/opencode/plugins" in preserved
+    assert ".config/opencode/skills" not in managed["exact_directories"]
+    assert ".config/opencode/skills/ru-writing-style" not in managed["exact_directories"]
+    expected_managed_skills = {
+        f".config/opencode/skills/{path.parent.name}"
+        for path in (ROOT / "skills").glob("*/SKILL.md")
+        if path.parent.name != "ru-writing-style"
+    }
+    expected_managed_skills.add(".config/opencode/skills/sync-base")
+    assert expected_managed_skills <= set(managed["exact_directories"])
 
     runtime_text = "\n".join(
         path.read_text(encoding="utf-8").lower()

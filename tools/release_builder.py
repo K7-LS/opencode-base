@@ -6,12 +6,20 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import zipfile
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterator
+
+
+TOOLS_ROOT = Path(__file__).resolve().parent
+if str(TOOLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(TOOLS_ROOT))
+
+import session_tools
 
 
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
@@ -71,7 +79,15 @@ def release_binding_from_manifest(
         raise ValueError(
             "release manifest lacks binding fields: " + ", ".join(missing)
         )
-    return {name: manifest[name] for name in required}
+    binding = {name: manifest[name] for name in required}
+    if "session_tools_asset" in manifest:
+        asset = session_tools.validate_session_tools_asset_record(
+            manifest["session_tools_asset"]
+        )
+        if asset["name"] != f"session-tools-opencode-{manifest['version']}.zip":
+            raise ValueError("session tools asset name does not match release version")
+        binding["session_tools_asset"] = asset
+    return binding
 
 
 def bind_candidate_acceptance(
@@ -435,6 +451,7 @@ def build_component_lock(
     cold = _load_json(repo_root / "catalog" / "cold.json")
     if not isinstance(agents, list) or not isinstance(skills, list):
         raise ValueError("component catalogs are invalid")
+    managed_skills = [row for row in skills if row["id"] != "ru-writing-style"]
     groups = {
         "hot": [
             _component(
@@ -460,7 +477,7 @@ def build_component_lock(
                 _tree_files(repo_root / "skills" / str(row["id"])),
                 provenance,
             )
-            for row in skills
+            for row in managed_skills
         ],
         "control_skills": [
             _component(repo_root, path.name, _tree_files(path), provenance)
@@ -569,6 +586,18 @@ def build_release_from_source(
         raise ValueError("managed surface target differs")
     paths = contract["paths"]
     install_root = str(paths["install_root"])
+    session_bundle = session_tools.build_session_tools_bundle(
+        repo_root,
+        dist_root,
+        version,
+    )
+    session_asset = session_tools.session_tools_asset_record(session_bundle)
+    session_baseline = {
+        "manifest_path": "session-tools-baseline/session-tools-manifest.json",
+        "manifest_sha256": session_asset["manifest_sha256"],
+        "tools": session_bundle.manifest["tools"],
+        "retired_tool_ids": [],
+    }
     component_lock = build_component_lock(repo_root, version, identity)
     lock_bytes = _json_bytes(component_lock)
 
@@ -578,7 +607,12 @@ def build_release_from_source(
     _add(entries, f"{install_root}/base/VERSION", (version + "\n").encode())
     _add(entries, f"{install_root}/base/components.lock.json", lock_bytes)
     _add_tree(entries, repo_root / "agents", f"{install_root}/agents")
-    _add_tree(entries, repo_root / "skills", f"{install_root}/skills")
+    _add_tree(
+        entries,
+        repo_root / "skills",
+        f"{install_root}/skills",
+        exclude=set((repo_root / "skills" / "ru-writing-style").rglob("*")),
+    )
     _add_tree(entries, repo_root / "control-skills", f"{install_root}/skills")
     _add_tree(entries, repo_root / "commands", f"{install_root}/commands")
     _add_tree(entries, repo_root / "cold", f"{install_root}/base/cold")
@@ -587,6 +621,11 @@ def build_release_from_source(
         repo_root / "runtime",
         f"{install_root}/base/runtime",
         exclude={repo_root / str(paths["config_source"])},
+    )
+    _add(
+        entries,
+        f"{install_root}/base/runtime/session-tools-baseline.json",
+        session_bundle.manifest_bytes,
     )
     _add_tree(
         entries,
@@ -620,10 +659,20 @@ def build_release_from_source(
             "credentials_included": False,
         },
         "environment": contract["environment"],
+        "session_tools_baseline": session_baseline,
         "files": files,
     }
     package_manifest_bytes = _json_bytes(package_manifest)
     _add(entries, "package-manifest.json", package_manifest_bytes)
+    _add(
+        entries,
+        "session-tools-baseline/session-tools-manifest.json",
+        session_bundle.manifest_bytes,
+    )
+    with zipfile.ZipFile(session_bundle.zip_path) as session_archive:
+        for name in session_archive.namelist():
+            if name != session_tools.MANIFEST_NAME:
+                _add(entries, f"session-tools-baseline/{name}", session_archive.read(name))
 
     dist_root.mkdir(parents=True, exist_ok=True)
     target = str(contract["target"])
@@ -647,6 +696,7 @@ def build_release_from_source(
             "sha256": _file_sha256(zip_path),
             "bytes": zip_path.stat().st_size,
         },
+        "session_tools_asset": session_asset,
         "package_manifest_sha256": _sha256(package_manifest_bytes),
         "components_lock_sha256": _sha256(lock_bytes),
         "requires": {
