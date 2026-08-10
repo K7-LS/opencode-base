@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "target": "opencode",
+  "checked_client_version": "1.18.13",
+  "checked_at": "2026-08-10",
+  "managed_prelaunch": {
+    "status": "PASS",
+    "entrypoint": "opencode-managed.exe",
+    "updater": "update-session-tools.ps1",
+    "same_session_discovery": true
+  },
+  "direct_launch": {
+    "status": "NOT_PASS",
+    "reason": "No stable documented pre-discovery SessionStart command hook is confirmed.",
+    "opencode_config_changed": false,
+    "beta_plugin_reload_used": false
+  },
+  "sources": [
+    {
+      "kind": "stable-docs",
+      "url": "https://opencode.ai/docs/plugins/",
+      "observation": "Plugins load at startup and session.created is listed only as an event; no pre-discovery ordering guarantee is documented."
+    },
+    {
+      "kind": "stable-docs",
+      "url": "https://opencode.ai/docs/skills",
+      "observation": "Global skills are discovered from ~/.config/opencode/skills/<name>/SKILL.md."
+    },
+    {
+      "kind": "tagged-source",
+      "url": "https://raw.githubusercontent.com/anomalyco/opencode/v1.18.13/packages/opencode/src/project/bootstrap.ts",
+      "observation": "Plugin initialization precedes the other bootstrap services, but this is not a documented SessionStart command-hook contract."
+    },
+    {
+      "kind": "tagged-source",
+      "url": "https://raw.githubusercontent.com/anomalyco/opencode/v1.18.13/packages/opencode/src/plugin/index.ts",
+      "observation": "Stable plugins receive session events through the event listener; no synchronous pre-discovery SessionStart command hook is exposed."
+    },
+    {
+      "kind": "tagged-source",
+      "url": "https://raw.githubusercontent.com/anomalyco/opencode/v1.18.13/packages/opencode/src/skill/index.ts",
+      "observation": "Skill discovery is materialized through per-instance state from configured directories."
+    },
+    {
+      "kind": "official-beta-docs",
+      "url": "https://opencode.ai/v2/docs/build/plugins",
+      "observation": "The V2 plugin API is explicitly beta and is not used for the release path."
+    },
+    {
+      "kind": "official-issue",
+      "url": "https://github.com/anomalyco/opencode/issues/14863",
+      "observation": "Declarative native session lifecycle hooks were requested and the issue was closed as not planned."
+    }
+  ]
+}
