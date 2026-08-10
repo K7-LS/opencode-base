@@ -637,6 +637,15 @@ def build_release_from_source(
         foundation_root,
         f"{install_root}/base/foundation/{foundation_version}",
     )
+    _add(
+        entries,
+        "session-tools-baseline/session-tools-manifest.json",
+        session_bundle.manifest_bytes,
+    )
+    with zipfile.ZipFile(session_bundle.zip_path) as session_archive:
+        for name in session_archive.namelist():
+            if name != session_tools.MANIFEST_NAME:
+                _add(entries, f"session-tools-baseline/{name}", session_archive.read(name))
 
     files = [
         {"path": name, "sha256": _sha256(payload), "bytes": len(payload)}
@@ -669,15 +678,6 @@ def build_release_from_source(
     }
     package_manifest_bytes = _json_bytes(package_manifest)
     _add(entries, "package-manifest.json", package_manifest_bytes)
-    _add(
-        entries,
-        "session-tools-baseline/session-tools-manifest.json",
-        session_bundle.manifest_bytes,
-    )
-    with zipfile.ZipFile(session_bundle.zip_path) as session_archive:
-        for name in session_archive.namelist():
-            if name != session_tools.MANIFEST_NAME:
-                _add(entries, f"session-tools-baseline/{name}", session_archive.read(name))
 
     dist_root.mkdir(parents=True, exist_ok=True)
     target = str(contract["target"])
