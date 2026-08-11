@@ -17,10 +17,8 @@
     ".config/opencode/skills/cad-reader",
     ".config/opencode/skills/chains-pattern",
     ".config/opencode/skills/co-verify",
-    ".config/opencode/skills/doc-extract",
     ".config/opencode/skills/doc-finder",
     ".config/opencode/skills/domain-grilling",
-    ".config/opencode/skills/excel-helper",
     ".config/opencode/skills/facts-layer",
     ".config/opencode/skills/graphify",
     ".config/opencode/skills/handoff-to-new-chat",
@@ -35,7 +33,6 @@
     ".config/opencode/skills/pnr-vor-helper",
     ".config/opencode/skills/project-memory",
     ".config/opencode/skills/revit-family-generator",
-    ".config/opencode/skills/revit-family-generator-ru",
     ".config/opencode/skills/revit-testbed",
     ".config/opencode/skills/ru-gov-access",
     ".config/opencode/skills/skill-development",
@@ -49,7 +46,6 @@
     ".config/opencode/skills/understanding-map",
     ".config/opencode/skills/upd-parser",
     ".config/opencode/skills/web-access",
-    ".config/opencode/skills/word-helper",
     ".config/opencode/skills/yandex-disk-uploader"
   ],
   "preserved_paths": [
