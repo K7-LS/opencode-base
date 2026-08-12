@@ -53,6 +53,7 @@ def _foundation(root: Path) -> Path:
         "engine_version": "0.2.1",
         "network": "offline",
         "commands": [
+            "apply",
             "doctor",
             "install",
             "inventory",
