@@ -551,7 +551,7 @@ def _validate_foundation(root: Path) -> tuple[str, str]:
         manifest.get("engine_version") != version
         or manifest.get("network") != "offline"
         or manifest.get("commands")
-        != ["doctor", "install", "inventory", "plan", "rollback"]
+        != ["apply", "doctor", "install", "inventory", "plan", "rollback"]
         or manifest.get("supported_powershell") != ["5.1", "7"]
         or manifest.get("foundation_ps1_sha256")
         != _file_sha256(root / "foundation.ps1")
