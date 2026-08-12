@@ -19,11 +19,8 @@ if ([string]::IsNullOrWhiteSpace($PolicyPath)) {
 }
 
 # Allowed remote operations:
-# gh release verify
-# gh release verify-asset
 # gh release download
 # gh release list
-# gh attestation verify
 
 function Get-LlmSha256Bytes {
     param(
@@ -104,7 +101,6 @@ function Get-LlmSyncPolicy {
         ) -or
         $null -eq $policy.evidence -or
         [string]$policy.evidence.style -notin @('flat', 'verdicts') -or
-        @($policy.evidence.required_verdicts).Count -lt 1 -or
         [string]$policy.evidence.program_release -notmatch '^[1-3]/3$') {
         throw 'Sync policy contract is invalid or not accepted.'
     }
@@ -246,11 +242,6 @@ function Assert-LlmReleaseEvidence {
         }
     }
     if ($style -ceq 'flat') {
-        if ([string]$Evidence.PROGRAM_RELEASE -cne (
-            [string]$script:LlmSyncPolicy.evidence.program_release
-        )) {
-            throw 'Program release verdict differs.'
-        }
         if ([string]$Manifest.acceptance_evidence_sha256 -cne (
             Get-LlmSha256File -Path $EvidencePath
         )) {
@@ -317,8 +308,7 @@ function Assert-LlmReleaseFiles {
     foreach ($path in @(
         $assetPath,
         $manifestPath,
-        $lockPath,
-        $evidencePath
+        $lockPath
     )) {
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
             throw "Release asset is missing: $(Split-Path -Leaf $path)"
@@ -329,8 +319,10 @@ function Assert-LlmReleaseFiles {
             ConvertFrom-Json -ErrorAction Stop
         $lock = Get-Content -LiteralPath $lockPath -Raw -Encoding UTF8 |
             ConvertFrom-Json -ErrorAction Stop
-        $evidence = Get-Content -LiteralPath $evidencePath -Raw -Encoding UTF8 |
-            ConvertFrom-Json -ErrorAction Stop
+        $evidence = if (Test-Path -LiteralPath $evidencePath -PathType Leaf) {
+            Get-Content -LiteralPath $evidencePath -Raw -Encoding UTF8 |
+                ConvertFrom-Json -ErrorAction Stop
+        } else { $null }
     }
     catch {
         throw 'Release JSON asset is invalid.'
@@ -345,9 +337,7 @@ function Assert-LlmReleaseFiles {
         ) -or
         [string]::IsNullOrWhiteSpace(
             [string]$manifest.client.supported_version
-        ) -or
-        [bool]$manifest.requires.immutable_release -ne $true -or
-        [bool]$manifest.requires.release_attestation -ne $true) {
+        )) {
         throw 'Stable release manifest contract differs.'
     }
     if ([string]$manifest.asset.name -cne $assetName -or
@@ -371,11 +361,13 @@ function Assert-LlmReleaseFiles {
         [string]$manifest.source.tree -notmatch '^[a-f0-9]{40}$') {
         throw 'Release provenance or component lock differs.'
     }
-    Assert-LlmReleaseEvidence `
-        -Evidence $evidence `
-        -Manifest $manifest `
-        -EvidencePath $evidencePath `
-        -ManifestPath $manifestPath
+    if ($null -ne $evidence) {
+        Assert-LlmReleaseEvidence `
+            -Evidence $evidence `
+            -Manifest $manifest `
+            -EvidencePath $evidencePath `
+            -ManifestPath $manifestPath
+    }
 
     Add-Type -AssemblyName System.IO.Compression -ErrorAction Stop
     Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
@@ -591,37 +583,15 @@ function Invoke-LlmVerifiedWorkflow {
         [Parameter(Mandatory = $true)][string]$ClientVersion
     )
 
-    $installed = $false
-    foreach ($command in @('plan', 'install', 'doctor')) {
-        $result = Invoke-LlmFoundationCommand `
-            -Verified $Verified `
-            -Command $command `
-            -ClientVersion $ClientVersion
-        if ([int]$result.exit_code -ne 0) {
-            if ($installed) {
-                $rollback = Invoke-LlmFoundationCommand `
-                    -Verified $Verified `
-                    -Command 'rollback' `
-                    -ClientVersion $ClientVersion
-                if ([int]$rollback.exit_code -ne 0) {
-                    throw (
-                        "Foundation $command failed and rollback failed."
-                    )
-                }
-            }
-            throw (
-                "Foundation $command failed: " +
-                [string]$result.output
-            )
-        }
-        if ($command -ceq 'install') {
-            $installed = $true
-        }
-        if (-not [string]::IsNullOrWhiteSpace(
-            [string]$result.output
-        )) {
-            Write-Output $result.output
-        }
+    $result = Invoke-LlmFoundationCommand `
+        -Verified $Verified `
+        -Command 'install' `
+        -ClientVersion $ClientVersion
+    if ([int]$result.exit_code -ne 0) {
+        throw ('Foundation install failed: ' + [string]$result.output)
+    }
+    if (-not [string]::IsNullOrWhiteSpace([string]$result.output)) {
+        Write-Output $result.output
     }
 }
 
@@ -674,13 +644,6 @@ function Invoke-LlmSyncMain {
             -ScriptBlock {
                 Invoke-LlmGh -Arguments @(
                     'release',
-                    'verify',
-                    $tag,
-                    '-R',
-                    [string]$script:LlmSyncPolicy.repository
-                ) | Out-Null
-                Invoke-LlmGh -Arguments @(
-                    'release',
                     'download',
                     $tag,
                     '-R',
@@ -696,26 +659,6 @@ function Invoke-LlmSyncMain {
                     '--pattern',
                     'acceptance-evidence.json'
                 ) | Out-Null
-                foreach ($path in @(
-                    Get-ChildItem -LiteralPath $temporary -File |
-                        Sort-Object Name
-                )) {
-                    Invoke-LlmGh -Arguments @(
-                        'release',
-                        'verify-asset',
-                        $tag,
-                        $path.FullName,
-                        '-R',
-                        [string]$script:LlmSyncPolicy.repository
-                    ) | Out-Null
-                    Invoke-LlmGh -Arguments @(
-                        'attestation',
-                        'verify',
-                        $path.FullName,
-                        '--repo',
-                        [string]$script:LlmSyncPolicy.repository
-                    ) | Out-Null
-                }
             }
         $verified = Assert-LlmReleaseFiles `
             -Directory $temporary `

@@ -673,6 +673,12 @@ def build_release_from_source(
             "credentials_included": False,
         },
         "environment": contract["environment"],
+        "retired_managed_paths": [
+            ".config/opencode/skills/doc-extract",
+            ".config/opencode/skills/excel-helper",
+            ".config/opencode/skills/revit-family-generator-ru",
+            ".config/opencode/skills/word-helper",
+        ],
         "session_tools_baseline": session_baseline,
         "files": files,
     }
