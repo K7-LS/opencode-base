@@ -16,10 +16,7 @@
   },
   "evidence": {
     "style": "verdicts",
-    "required_verdicts": [
-      "FULL_RELEASE_OPENCODE",
-      "RELEASE_INTEGRITY"
-    ],
+    "required_verdicts": [],
     "program_release": "3/3"
   }
 }

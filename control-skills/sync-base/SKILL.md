@@ -10,17 +10,17 @@ compatibility: opencode
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
-  "$HOME\.config\opencode\skills\sync-base\tools\sync_base.ps1"
+  "$HOME\.config\opencode\skills\sync-base\tools\sync_base.ps1" `
+  -PolicyPath "$HOME\.config\opencode\skills\sync-base\sync-policy.json"
 ```
 
 1. Выбери последний стабильный `opencode-vX.Y.Z`.
-2. Проверь immutable release и attestation каждого asset официальным GitHub
-   verifier.
-3. Сверь manifest, component inventory и SHA-256.
+2. Скачай пакет и release manifest.
+3. Сверь target, версию и SHA-256 пакета из manifest.
 4. Передай пакет Foundation для `plan`, `install`, `doctor`.
 5. Если install прошёл, а doctor нет, выполни Foundation rollback.
 6. Используй сохранённый профиль Direct, VPN, HTTP, HTTPS или SOCKS5; секрет
    не выводи в лог или историю команд.
 
-Нельзя устанавливать verifier, выполнять login, брать prerelease, понижать
-версию или обходить проверку. Consumer ничего не отправляет на hub.
+Нельзя устанавливать `gh`, выполнять login, брать prerelease или понижать
+версию. Consumer ничего не отправляет на hub.

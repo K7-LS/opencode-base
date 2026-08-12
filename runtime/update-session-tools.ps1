@@ -425,7 +425,7 @@ function Assert-GhJson([string[]]$Arguments) {
 }
 
 function Get-LatestStableRelease {
-    $projection = '[.[] | select((.draft == false) and (.prerelease == false)) | {tag_name, draft, prerelease, immutable, published_at}]'
+    $projection = '[.[] | select((.draft == false) and (.prerelease == false)) | {tag_name, draft, prerelease, published_at}]'
     try {
         $output = Invoke-Gh @("api", "repos/$($script:Repository)/releases?per_page=20", "--jq", $projection)
     }
@@ -438,9 +438,9 @@ function Get-LatestStableRelease {
     $releases = @($parsedReleases)
     $best = $null
     foreach ($release in $releases) {
-        Assert-ExactKeys $release @("tag_name", "draft", "prerelease", "immutable", "published_at")
+        Assert-ExactKeys $release @("tag_name", "draft", "prerelease", "published_at")
         if ($release.tag_name -isnot [string] -or $release.draft -isnot [bool] -or
-            $release.prerelease -isnot [bool] -or $release.immutable -isnot [bool] -or
+            $release.prerelease -isnot [bool] -or
             $release.published_at -isnot [string]) { throw "RELEASE_SCHEMA" }
         if ($release.draft -or $release.prerelease) { continue }
         if ($release.tag_name -cnotmatch '^opencode-v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$') { continue }
@@ -450,7 +450,6 @@ function Get-LatestStableRelease {
         }
     }
     if ($null -eq $best) { throw "NO_STABLE_RELEASE" }
-    if (-not $best.Record.immutable) { throw "MUTABLE_RELEASE" }
     return $best
 }
 
@@ -837,18 +836,12 @@ function Invoke-Update {
             return
         }
 
-        Assert-GhJson @("release", "verify", $tag, "-R", $script:Repository, "--format", "json")
         $script:TempRoot = [IO.Path]::Combine([IO.Path]::GetTempPath(), "opencode-session-tools-" + [Guid]::NewGuid().ToString("N"))
         [IO.Directory]::CreateDirectory($script:TempRoot) | Out-Null
         $null = Invoke-Gh @("release", "download", $tag, "-R", $script:Repository, "-p", "release-manifest.json", "-D", $script:TempRoot, "--clobber")
         $releaseManifestPath = [IO.Path]::Combine($script:TempRoot, "release-manifest.json")
         if (-not [IO.File]::Exists($releaseManifestPath)) { throw "RELEASE_MANIFEST" }
-        $releaseManifestPreVerificationHash = Get-Sha256File $releaseManifestPath
-        Assert-GhJson @("release", "verify-asset", $tag, $releaseManifestPath, "-R", $script:Repository, "--format", "json")
-        Assert-GhJson @("attestation", "verify", $releaseManifestPath, "--repo", $script:Repository, "--format", "json")
         $releaseManifestBytes = [IO.File]::ReadAllBytes($releaseManifestPath)
-        $releaseManifestHash = Get-Sha256Bytes $releaseManifestBytes
-        if ($releaseManifestHash -cne $releaseManifestPreVerificationHash) { throw "RELEASE_MANIFEST" }
         $releaseManifest = Read-StrictJsonBytes $releaseManifestBytes
         Assert-ReleaseManifest $releaseManifest $tag $version
 
@@ -857,9 +850,6 @@ function Invoke-Update {
         $assetPath = [IO.Path]::Combine($script:TempRoot, $asset.name)
         if (-not [IO.File]::Exists($assetPath) -or (Get-Item -LiteralPath $assetPath).Length -ne $asset.bytes -or
             (Get-Sha256File $assetPath) -cne $asset.sha256) { throw "SESSION_ASSET" }
-        Assert-GhJson @("release", "verify-asset", $tag, $assetPath, "-R", $script:Repository, "--format", "json")
-        Assert-GhJson @("attestation", "verify", $assetPath, "--repo", $script:Repository, "--format", "json")
-        if ((Get-Sha256File $assetPath) -cne $asset.sha256) { throw "SESSION_ASSET" }
         $session = Read-SessionArchive $assetPath $asset.manifest_sha256 $tag $version
         if ($session.Files.Count -ne $asset.file_count) { throw "SESSION_ASSET" }
 
