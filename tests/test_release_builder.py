@@ -56,7 +56,7 @@ def _fake_foundation(root: Path) -> Path:
             "engine_version": "0.1.0",
             "protocol_version": 1,
             "network": "offline",
-            "commands": ["doctor", "install", "inventory", "plan", "rollback"],
+            "commands": ["apply", "doctor", "install", "inventory", "plan", "rollback"],
             "supported_powershell": ["5.1", "7"],
             "foundation_ps1_sha256": _sha256(script),
         },
