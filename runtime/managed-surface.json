@@ -5,6 +5,7 @@
     ".config/opencode/AGENTS.md",
     ".config/opencode/base/VERSION",
     ".config/opencode/base/components.lock.json",
+    ".config/opencode/base/desired-state.json",
     ".config/opencode/opencode.json"
   ],
   "exact_directories": [
@@ -19,6 +20,7 @@
     ".config/opencode/skills/co-verify",
     ".config/opencode/skills/doc-extract",
     ".config/opencode/skills/doc-finder",
+    ".config/opencode/skills/document-quality-gate",
     ".config/opencode/skills/domain-grilling",
     ".config/opencode/skills/excel-helper",
     ".config/opencode/skills/facts-layer",

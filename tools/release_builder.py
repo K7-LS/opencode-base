@@ -45,6 +45,47 @@ def _json_bytes(value: object) -> bytes:
     ).encode("utf-8")
 
 
+def _build_desired_state(repo_root: Path, contract: dict[str, object]) -> dict[str, object]:
+    agents = _load_json(repo_root / "catalog" / "agents.json")
+    skills = _load_json(repo_root / "catalog" / "skills.json")
+    install_root = str(contract["paths"]["install_root"])
+    return {
+        "schema_version": 1,
+        "client": "opencode",
+        "unknown_policy": "prompt-every-run",
+        "skills": sorted(str(row["id"]) for row in skills),
+        "agents": sorted(str(row["id"]) for row in agents),
+        "hooks": ["startup:check-release"],
+        "managed_files": [
+            str(contract["paths"]["hot_destination"]),
+            str(contract["paths"]["config_destination"]),
+        ],
+        "inventory_roots": [
+            f"{install_root}/agents",
+            f"{install_root}/commands",
+            f"{install_root}/skills",
+        ],
+        "mcp": [],
+        "plugins": [],
+        "marketplaces": [],
+        "shared_tools": {
+            "officecli": "1.0.143",
+            "officecli_pdf_exporter": "1.0.0",
+        },
+        "platform_owned": [],
+        "protected_state": [
+            ".config/opencode/auth.json",
+            ".config/opencode/plugins",
+            ".config/opencode/themes",
+            ".config/opencode/tools",
+            ".local/share/opencode",
+            "projects",
+        ],
+        "retired_ids": [],
+        "migrations": [],
+    }
+
+
 def _sha256(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
@@ -436,15 +477,8 @@ def build_component_lock(
     version: str,
     identity: dict[str, str],
 ) -> dict[str, object]:
-    migration = _load_json(repo_root / "MIGRATION-SOURCE.json")
-    source = migration["source"]
     provenance = {
-        "upstream_migration": {
-            "repository": source["repository"],
-            "commit": source["commit"],
-            "tree": source["tree"],
-        },
-        "rendered_target": identity,
+        "native_repository": identity,
     }
     agents = _load_json(repo_root / "catalog" / "agents.json")
     skills = _load_json(repo_root / "catalog" / "skills.json")
@@ -606,6 +640,11 @@ def build_release_from_source(
     _add(entries, str(paths["config_destination"]), (repo_root / str(paths["config_source"])).read_bytes())
     _add(entries, f"{install_root}/base/VERSION", (version + "\n").encode())
     _add(entries, f"{install_root}/base/components.lock.json", lock_bytes)
+    _add(
+        entries,
+        f"{install_root}/base/desired-state.json",
+        _json_bytes(_build_desired_state(repo_root, contract)),
+    )
     _add_tree(entries, repo_root / "agents", f"{install_root}/agents")
     _add_tree(
         entries,
@@ -673,6 +712,19 @@ def build_release_from_source(
             "credentials_included": False,
         },
         "environment": contract["environment"],
+        "desired_state": {
+            "schema_version": 1,
+            "unknown_policy": "prompt-every-run",
+            "local_exceptions": True,
+            "strict_doctor": True,
+            "inventory_roots": [
+                f"{install_root}/agents",
+                f"{install_root}/commands",
+                f"{install_root}/skills",
+            ],
+            "platform_owned": [],
+            "toml_reconcile": [],
+        },
         "session_tools_baseline": session_baseline,
         "files": files,
     }

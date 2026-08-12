@@ -85,7 +85,6 @@ def build_acceptance_report(
     client_version: str = SYNTHETIC_CLIENT_VERSION,
     release_binding: dict[str, object] | None = None,
 ) -> dict[str, object]:
-    verdict = FULL_VERDICTS[target]
     matrix_passed = bool(matrix) and all(
         (
             value == "PASS"
@@ -97,7 +96,7 @@ def build_acceptance_report(
     report = {
         "schema_version": 1,
         "target": target,
-        "NON_RELEASABLE": True,
+        "channel": "InternalUnsigned",
         "CLIENT_CONTRACT": (
             "SYNTHETIC_ONLY" if synthetic else "ACCEPTED_BINARY"
         ),
@@ -105,8 +104,13 @@ def build_acceptance_report(
             "PASS" if matrix_passed else "NOT_PASS"
         ),
         "DETERMINISTIC_PACKAGE": "PASS",
-        verdict: "NOT_PASS",
-        "PROGRAM_RELEASE": "0/3",
+        "TECHNICAL_READY": (
+            "PASS" if matrix_passed and not synthetic else "NOT_PASS"
+        ),
+        "PROVIDER_LIVE": "NOT_APPLICABLE",
+        "INTERNAL_UNSIGNED_RELEASE": (
+            "PASS" if matrix_passed and not synthetic else "NOT_PASS"
+        ),
         "source": source,
         "foundation": foundation,
         "asset": asset,
@@ -528,21 +532,6 @@ def run_acceptance(
         }
         shutil.copytree(first.zip_path.parent, output_root)
 
-    marker = (
-        (
-            "NON-RELEASABLE OFFLINE SYNTHETIC PACKAGE\n"
-            "Client contract: 0.0.0-offline\n"
-        )
-        if synthetic
-        else (
-            "OFFLINE-ACCEPTED CANDIDATE; NOT A STABLE RELEASE\n"
-            f"Client contract: {client_version}\n"
-        )
-    ) + "Stable promotion and employee distribution are forbidden.\n"
-    (output_root / "NON_RELEASABLE.txt").write_text(
-        marker,
-        encoding="utf-8",
-    )
     asset = {
         "name": first.zip_path.name,
         "sha256": _file_sha256(output_root / first.zip_path.name),

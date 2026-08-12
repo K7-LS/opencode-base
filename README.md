@@ -6,7 +6,7 @@ migration provenance.
 ## Runtime shape
 
 - HOT: compact global `~/.config/opencode/AGENTS.md`.
-- WARM: native discovery metadata for 16 subagents, 38 capability skills, and
+- WARM: native discovery metadata for 16 subagents, 39 capability skills, and
   one `sync-base` control skill.
 - COLD: full instructions, scripts, templates, references, 3 chains, and 3
   commands loaded only when selected.

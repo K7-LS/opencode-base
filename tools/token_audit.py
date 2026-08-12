@@ -73,7 +73,7 @@ def _candidate_surfaces(
             skills,
             logical_root=skill_root,
             count=len(skill_paths),
-            capability_skills=38,
+            capability_skills=39,
             control_skills=1,
         ),
         "agents_discovery": _surface(

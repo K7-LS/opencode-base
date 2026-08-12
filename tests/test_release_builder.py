@@ -179,6 +179,7 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
         assert config in names
         assert f"{root}/base/VERSION" in names
         assert f"{root}/base/components.lock.json" in names
+        assert f"{root}/base/desired-state.json" in names
         assert f"{root}/base/foundation/0.1.0/foundation.ps1" in names
         assert f"{root}/skills/sync-base/SKILL.md" in names
         assert f"{root}/skills/ru-writing-style/SKILL.md" not in names
@@ -197,7 +198,7 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
                 for name in names
                 if name.startswith(f"{root}/skills/") and name.endswith("/SKILL.md")
             ]
-        ) == 38
+        ) == 39
         assert len(
             [
                 name
@@ -217,6 +218,22 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
             "preserved_paths": managed["preserved_paths"],
         }
         assert package["environment"] == contract["environment"]
+        assert package["desired_state"] == {
+            "schema_version": 1,
+            "unknown_policy": "prompt-every-run",
+            "local_exceptions": True,
+            "strict_doctor": True,
+            "inventory_roots": [
+                ".config/opencode/agents",
+                ".config/opencode/commands",
+                ".config/opencode/skills",
+            ],
+            "platform_owned": [],
+            "toml_reconcile": [],
+        }
+        desired = json.loads(archive.read(f"{root}/base/desired-state.json"))
+        assert desired["client"] == "opencode"
+        assert "document-quality-gate" in desired["skills"]
         assert package["session_tools_baseline"] == {
             "manifest_path": "session-tools-baseline/session-tools-manifest.json",
             "manifest_sha256": session["manifest_sha256"],
@@ -251,7 +268,7 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
 
     lock = json.loads(first.component_lock_path.read_text(encoding="utf-8"))
     assert len(lock["components"]["agents"]) == 16
-    assert len(lock["components"]["skills"]) == 37
+    assert len(lock["components"]["skills"]) == 38
     assert len(lock["components"]["control_skills"]) == 1
     assert len(lock["components"]["commands"]) == 3
     assert len(lock["components"]["cold"]) == 23
