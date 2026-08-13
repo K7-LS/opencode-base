@@ -93,7 +93,7 @@ def test_event_parser_extracts_text_and_step_usage():
 
 def test_marker_evidence_contains_no_prompt_response_session_or_auth():
     evidence = marker.summarize_marker(
-        client_version="1.18.7",
+        client_version="1.18.13",
         message=marker.EXPECTED_RESPONSE,
         usage={
             "total": 101,

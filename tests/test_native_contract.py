@@ -166,7 +166,7 @@ def test_opencode_managed_surface_is_native_and_preserves_state():
         (ROOT / "runtime" / "release-contract.json").read_text(encoding="utf-8")
     )
     assert release["client"]["acceptance"] == "PASS"
-    assert release["client"]["supported_version"] == "1.18.7"
+    assert release["client"]["supported_version"] == "1.18.13"
     client_evidence = json.loads(
         (ROOT / "runtime" / "client-acceptance.json").read_text(
             encoding="utf-8"
@@ -175,7 +175,7 @@ def test_opencode_managed_surface_is_native_and_preserves_state():
     assert client_evidence["verdict"] == "PASS"
     assert client_evidence["client"] == {
         "id": "opencode",
-        "version": "1.18.7",
+        "version": "1.18.13",
     }
     assert client_evidence["binary"]["authenticode_status"] == "Valid"
     assert client_evidence["distribution"]["method"] == (
@@ -183,19 +183,19 @@ def test_opencode_managed_surface_is_native_and_preserves_state():
     )
     assert client_evidence["download"] == {
         "name": "opencode-windows-x64.zip",
-        "url": "https://github.com/anomalyco/opencode/releases/download/v1.18.7/opencode-windows-x64.zip",
-        "sha256": "54598e262c0744e6c3b9ddba85764917a48d366a9aa6c817c2feb9d34b3f1105",
-        "bytes": 59436082,
+        "url": "https://github.com/anomalyco/opencode/releases/download/v1.18.13/opencode-windows-x64.zip",
+        "sha256": "4cc2bd079255db237def148aa0771d5117e0791b96da2b281891a45a2a7d15e2",
+        "bytes": 59735038,
         "archive_entry": "opencode.exe",
     }
     assert client_evidence["binary"]["sha256"] == (
-        "b7b469b83cc3561e5129a1803b746f7e2c1974297909f5b346398dc9c56a477e"
+        "50ff54c55e15325fc23ace446a2ef545f75aa1c5990d3352af9b98c331aba55e"
     )
     assert client_evidence["binary"]["signer"] == (
         "Anomaly Innovations, Inc https://anoma.ly/"
     )
     assert client_evidence["desktop"]["sha256"] == (
-        "d44d535d4f3ac0dafcca8cbbf2bad6e0baefb089352a795fc57268337bdea378"
+        "3d1796daa0762ec49cdb27f8418b8e0d2dafb37d89dd4ea766b42bdd7cd6d260"
     )
     assert client_evidence["runtime_smoke"]["model_requests"] == 0
     assert release["environment"] == {

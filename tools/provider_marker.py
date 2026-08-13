@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 
-SUPPORTED_CLIENT = "1.18.7"
+SUPPORTED_CLIENT = "1.18.13"
 MODEL = "openai/gpt-5.6-terra"
 VARIANT = "low"
 PROMPT = "Ответь ровно: OPENCODE_BASE_CANARY_OK"

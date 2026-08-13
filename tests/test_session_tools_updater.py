@@ -166,7 +166,7 @@ def _strict_stable_manifest(bundle, version: str) -> dict[str, object]:
         "version": version,
         "tag": f"opencode-v{version}",
         "channel": "stable",
-        "client": {"id": "opencode", "supported_version": "1.18.7"},
+        "client": {"id": "opencode", "supported_version": "1.18.13"},
         "foundation_engine_version": "0.3.0",
         "foundation_engine_manifest_sha256": "1" * 64,
         "source": {

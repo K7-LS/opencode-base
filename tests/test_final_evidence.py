@@ -39,7 +39,7 @@ def _evidence(kind: str, binding: dict[str, object]) -> dict[str, object]:
         value = {
             "schema_version": 1,
             "target": "opencode",
-            "client": {"id": "opencode", "version": "1.18.7"},
+            "client": {"id": "opencode", "version": "1.18.13"},
             "provider": "openai",
             "authentication": "chatgpt-plus-pro-oauth",
             "provider_documentation": "https://example.test/providers",
@@ -73,7 +73,7 @@ def _evidence(kind: str, binding: dict[str, object]) -> dict[str, object]:
             "target": "opencode",
             "version": "0.1.0",
             "release_binding": binding,
-            "client": {"id": "opencode", "version": "1.18.7"},
+            "client": {"id": "opencode", "version": "1.18.13"},
             "OPENCODE_CANARY": "PASS",
             "model_requests": 0,
             "lifecycle": {

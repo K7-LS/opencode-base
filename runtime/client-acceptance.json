@@ -4,47 +4,47 @@
   "verdict": "PASS",
   "client": {
     "id": "opencode",
-    "version": "1.18.7"
+    "version": "1.18.13"
   },
   "distribution": {
     "method": "official-release-assets",
     "package_id": "opencode-windows-x64.zip",
-    "package_version": "1.18.7",
+    "package_version": "1.18.13",
     "scope": "current-user",
-    "source": "https://github.com/anomalyco/opencode/releases/download/v1.18.7/opencode-windows-x64.zip"
+    "source": "https://github.com/anomalyco/opencode/releases/download/v1.18.13/opencode-windows-x64.zip"
   },
   "download": {
     "name": "opencode-windows-x64.zip",
-    "url": "https://github.com/anomalyco/opencode/releases/download/v1.18.7/opencode-windows-x64.zip",
-    "sha256": "54598e262c0744e6c3b9ddba85764917a48d366a9aa6c817c2feb9d34b3f1105",
-    "bytes": 59436082,
+    "url": "https://github.com/anomalyco/opencode/releases/download/v1.18.13/opencode-windows-x64.zip",
+    "sha256": "4cc2bd079255db237def148aa0771d5117e0791b96da2b281891a45a2a7d15e2",
+    "bytes": 59735038,
     "archive_entry": "opencode.exe"
   },
   "binary": {
-    "sha256": "b7b469b83cc3561e5129a1803b746f7e2c1974297909f5b346398dc9c56a477e",
-    "bytes": 174043016,
+    "sha256": "50ff54c55e15325fc23ace446a2ef545f75aa1c5990d3352af9b98c331aba55e",
+    "bytes": 175350664,
     "authenticode_status": "Valid",
     "signer": "Anomaly Innovations, Inc https://anoma.ly/",
-    "issuer": "Microsoft ID Verified CS AOC CA 04",
+    "issuer": "Microsoft ID Verified CS EOC CA 03",
     "timestamped": true
   },
   "desktop": {
     "name": "opencode-desktop-win-x64.exe",
-    "url": "https://github.com/anomalyco/opencode/releases/download/v1.18.7/opencode-desktop-win-x64.exe",
-    "sha256": "d44d535d4f3ac0dafcca8cbbf2bad6e0baefb089352a795fc57268337bdea378",
-    "bytes": 124321352,
+    "url": "https://github.com/anomalyco/opencode/releases/download/v1.18.13/opencode-desktop-win-x64.exe",
+    "sha256": "3d1796daa0762ec49cdb27f8418b8e0d2dafb37d89dd4ea766b42bdd7cd6d260",
+    "bytes": 125676800,
     "authenticode_status": "Valid",
     "signer": "Anomaly Innovations, Inc https://anoma.ly/",
-    "issuer": "Microsoft ID Verified CS AOC CA 04",
+    "issuer": "Microsoft ID Verified CS EOC CA 03",
     "timestamped": true,
-    "file_version": "1.18.7"
+    "file_version": "1.18.13"
   },
   "runtime_smoke": {
     "version_command": [
       "opencode",
       "--version"
     ],
-    "version_output": "1.18.7",
+    "version_output": "1.18.13",
     "version_exit_code": 0,
     "help_exit_code": 0,
     "model_requests": 0,
