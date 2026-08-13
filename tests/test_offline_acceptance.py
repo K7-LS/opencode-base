@@ -135,3 +135,10 @@ def test_foundation_commands_allow_slow_windows_install(
 
     assert result == {"status": "PASS"}
     assert observed["timeout"] >= 180
+
+
+def test_acceptance_records_explicit_remove_decision_for_unknown_entries():
+    runner = (ROOT / "tools" / "run_offline_acceptance.py").read_text(
+        encoding="utf-8"
+    )
+    assert 'arguments.append("-ConfirmRemoveUnknown")' in runner
