@@ -161,7 +161,9 @@ def _validate_foundation(
     matching = [
         row
         for row in builds.values()
-        if row.get("status") == "PASS" and row.get("files") == hashes
+        if row.get("status") == "PASS"
+        and isinstance(row.get("files"), dict)
+        and all(row["files"].get(name) == digest for name, digest in hashes.items())
     ]
     if (
         evidence.get("FOUNDATION_SYNTHETIC") != "PASS"
