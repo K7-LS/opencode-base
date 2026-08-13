@@ -207,6 +207,7 @@ def _run_foundation(
     ]
     if command in {"plan", "install"}:
         arguments.extend(["-Package", str(package)])
+        arguments.append("-ConfirmRemoveUnknown")
     if command in {"plan", "install", "doctor"}:
         arguments.extend(
             [
