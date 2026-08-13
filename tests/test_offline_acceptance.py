@@ -48,7 +48,7 @@ def test_offline_contract_overlay_is_explicit_and_non_releasable():
 
     assert contract == original
     assert original["client"]["acceptance"] == "PASS"
-    assert original["client"]["supported_version"] == "1.18.7"
+    assert original["client"]["supported_version"] == "1.18.13"
     assert synthetic["client"] == {
         "id": original["client"]["id"],
         "supported_version": "0.0.0-offline",
@@ -91,7 +91,7 @@ def test_accepted_client_candidate_report_remains_non_stable():
         asset={"sha256": "d" * 64, "bytes": 123},
         matrix={"pwsh": "PASS", "powershell": "PASS"},
         synthetic=False,
-        client_version="1.18.7",
+        client_version="1.18.13",
     )
 
     assert report["CLIENT_CONTRACT"] == "ACCEPTED_BINARY"
@@ -128,7 +128,7 @@ def test_foundation_commands_allow_slow_windows_install(
         command="install",
         target="opencode",
         client_id="opencode",
-        client_version="1.18.7",
+        client_version="1.18.13",
         package=tmp_path / "candidate.zip",
         home=tmp_path / "home",
     )

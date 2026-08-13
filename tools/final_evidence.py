@@ -11,7 +11,7 @@ from typing import Any
 TARGET = "opencode"
 VERSIONED_CLIENT = {
     "id": "opencode",
-    "version": "1.18.7",
+    "version": "1.18.13",
 }
 EXPECTED_LIFECYCLE = {
     "plan": "READY",

@@ -38,8 +38,8 @@ offline_runner = _load_tool(
 
 TARGET = "opencode"
 CLIENT_ID = "opencode"
-CLIENT_VERSION = "1.18.7"
-CLIENT_VERSION_OUTPUT = "1.18.7"
+CLIENT_VERSION = "1.18.13"
+CLIENT_VERSION_OUTPUT = "1.18.13"
 CANARY_GATE = "OPENCODE_CANARY"
 
 

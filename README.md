@@ -29,7 +29,7 @@ has not run.
 
 Current verdict: `FULL_RELEASE_OPENCODE: NOT_PASS`.
 
-OpenCode `1.18.7` is pinned to the official Windows release assets. The CLI
+OpenCode `1.18.13` is pinned to the official Windows release assets. The CLI
 archive SHA-256 is
 `54598e262c0744e6c3b9ddba85764917a48d366a9aa6c817c2feb9d34b3f1105`;
 the Desktop installer SHA-256 is

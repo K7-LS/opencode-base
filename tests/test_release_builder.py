@@ -138,7 +138,7 @@ def test_native_release_is_deterministic_complete_and_one_way(tmp_path: Path):
     assert binding["source"] == identity
     assert first.manifest["client"] == {
         "id": contract["client"]["id"],
-        "supported_version": "1.18.7",
+        "supported_version": "1.18.13",
     }
     session = first.manifest["session_tools_asset"]
     assert session["name"] == "session-tools-opencode-1.2.3.zip"
