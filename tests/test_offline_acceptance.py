@@ -57,10 +57,10 @@ def test_offline_contract_overlay_is_explicit_and_non_releasable():
     assert synthetic_identity["transformation"].endswith(
         "-offline-contract-overlay"
     )
-    assert report["NON_RELEASABLE"] is True
+    assert report["channel"] == "InternalUnsigned"
+    assert report["TECHNICAL_READY"] == "NOT_PASS"
     assert report["CLIENT_CONTRACT"] == "SYNTHETIC_ONLY"
     assert report["FOUNDATION_FAKE_HOME"] == "PASS"
-    assert report["FULL_RELEASE_OPENCODE"] == "NOT_PASS"
     assert "package_acceptance" not in report
     assert report["evidence_body_sha256"] == runner.evidence_body_sha256(
         report
@@ -97,8 +97,8 @@ def test_accepted_client_candidate_report_remains_non_stable():
     assert report["CLIENT_CONTRACT"] == "ACCEPTED_BINARY"
     assert report["CLIENT_BINARY_ACCEPTANCE"] == "PASS"
     assert report["CANDIDATE_OFFLINE"] == "PASS"
-    assert report["FULL_RELEASE_OPENCODE"] == "NOT_PASS"
-    assert report["NON_RELEASABLE"] is True
+    assert report["TECHNICAL_READY"] == "PASS"
+    assert report["INTERNAL_UNSIGNED_RELEASE"] == "PASS"
     assert "package_acceptance" not in report
     assert report["evidence_body_sha256"] == runner.evidence_body_sha256(
         report

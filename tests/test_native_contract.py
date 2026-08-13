@@ -101,7 +101,7 @@ def test_opencode_has_exact_native_agent_and_skill_catalogs():
         for path in (ROOT / "skills").glob("*/SKILL.md")
     }
     assert agents == EXPECTED_AGENTS
-    assert len(skills) == 38
+    assert len(skills) == 39
 
     for path in sorted((ROOT / "agents").glob("*.md")):
         frontmatter = _frontmatter(path)
@@ -124,22 +124,12 @@ def test_opencode_has_exact_native_agent_and_skill_catalogs():
     assert all((ROOT / row["source"]).is_file() for row in catalog)
 
 
-def test_opencode_migration_provenance_names_every_ported_component():
-    migration = json.loads(
-        (ROOT / "MIGRATION-SOURCE.json").read_text(encoding="utf-8")
+def test_opencode_repository_is_native_not_generated_from_another_base():
+    assert not (ROOT / "MIGRATION-SOURCE.json").exists()
+    identity = json.loads(
+        (ROOT / "runtime" / "release-contract.json").read_text(encoding="utf-8")
     )
-    inventory = migration["inventory"]
-    assert set(inventory["agents"]) == EXPECTED_AGENTS
-    assert set(inventory["skills"]) == {
-        path.parent.name
-        for path in (ROOT / "skills").glob("*/SKILL.md")
-    }
-    assert len(inventory["cold"]) == 23
-    assert all((ROOT / "cold" / path).is_file() for path in inventory["cold"])
-    assert set(inventory["commands"]) == {
-        path.stem for path in (ROOT / "commands").glob("*.md")
-    }
-    assert inventory["control_skills"] == ["sync-base"]
+    assert identity["repository"].endswith("/opencode-base")
 
 
 def test_opencode_managed_surface_is_native_and_preserves_state():
@@ -264,8 +254,8 @@ def test_opencode_static_token_budget_passes_without_claiming_live_ab():
         "bytes": report["candidate"]["surfaces"]["skills_discovery"]["bytes"],
         "sha256": report["candidate"]["surfaces"]["skills_discovery"]["sha256"],
         "logical_root": "~/.config/opencode/skills",
-        "count": 39,
-        "capability_skills": 38,
+        "count": 40,
+        "capability_skills": 39,
         "control_skills": 1,
     }
 
@@ -307,7 +297,7 @@ def test_opencode_imports_exact_approved_russian_writing_skill_and_cold_officecl
     assert "Установка — только вручную" in text
     assert "officecli install" in text
     assert cold_catalog["memory"].count(officecli_reference) == 1
-    for directory in ("agents", "runtime", "skills"):
+    for directory in ("agents", "runtime"):
         assert not any(
             "officecli" in path.read_text(encoding="utf-8").lower()
             for path in (ROOT / directory).rglob("*")
@@ -315,6 +305,10 @@ def test_opencode_imports_exact_approved_russian_writing_skill_and_cold_officecl
             and path.suffix.lower()
             in {".json", ".md", ".ps1", ".py", ".txt", ".yaml", ".yml"}
         )
+    quality = (ROOT / "skills" / "document-quality-gate" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    assert "OfficeCLI" in quality
 
 
 def test_opencode_llm_interop_documentation_matches_bridge_cli():

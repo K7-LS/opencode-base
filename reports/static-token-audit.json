@@ -1,7 +1,7 @@
 {
   "candidate": {
     "cold_payload_in_startup": false,
-    "estimated_tokens": 4513,
+    "estimated_tokens": 4565,
     "surfaces": {
       "agents_discovery": {
         "bytes": 3321,
@@ -15,15 +15,15 @@
         "sha256": "299efa3b4a54ea358b65222028ec7d0c405d8caa800f1e5f1c9c1a3ffa0778d9"
       },
       "skills_discovery": {
-        "bytes": 7224,
-        "capability_skills": 38,
+        "bytes": 7379,
+        "capability_skills": 39,
         "control_skills": 1,
-        "count": 39,
+        "count": 40,
         "logical_root": "~/.config/opencode/skills",
-        "sha256": "7a9f42d50b351d16f96c6b881d44e369aed02495d7f9b3ecbdb192b358c17cdc"
+        "sha256": "7bea7025f4b10d66e27f2f10a3a87c24f1936fd087186be19fdd33504d0edf7f"
       }
     },
-    "total_bytes": 13538
+    "total_bytes": 13693
   },
   "legacy": {
     "captured_at": "2026-07-26",
@@ -60,7 +60,7 @@
   "results": {
     "MATCHED_AB": "NOT_RUN",
     "STATIC_TOKEN_ACCEPTANCE": "PASS",
-    "base_controlled_startup_reduction": 0.812173092664789
+    "base_controlled_startup_reduction": 0.8100226147037196
   },
   "schema_version": 1,
   "target": "opencode",
