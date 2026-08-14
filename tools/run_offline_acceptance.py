@@ -400,8 +400,8 @@ def _run_matrix_case(
     }
     expected = {
         "plan": "READY",
-        "install": "INSTALLED",
-        "doctor": "HEALTHY",
+        "install": "CANONICAL",
+        "doctor": "CANONICAL",
         "inventory": "INSTALLED",
         "rollback": "ROLLED_BACK",
     }

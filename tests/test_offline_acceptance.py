@@ -142,3 +142,11 @@ def test_acceptance_records_explicit_remove_decision_for_unknown_entries():
         encoding="utf-8"
     )
     assert 'arguments.append("-ConfirmRemoveUnknown")' in runner
+
+
+def test_acceptance_uses_strict_canonical_lifecycle_verdicts():
+    runner = (ROOT / "tools" / "run_offline_acceptance.py").read_text(
+        encoding="utf-8"
+    )
+    assert '"install": "CANONICAL"' in runner
+    assert '"doctor": "CANONICAL"' in runner
