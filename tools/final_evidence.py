@@ -15,8 +15,8 @@ VERSIONED_CLIENT = {
 }
 EXPECTED_LIFECYCLE = {
     "plan": "READY",
-    "install": "INSTALLED",
-    "doctor": "HEALTHY",
+    "install": "CANONICAL",
+    "doctor": "CANONICAL",
     "inventory": "INSTALLED",
     "rollback": "ROLLED_BACK",
 }

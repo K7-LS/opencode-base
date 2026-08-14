@@ -31,8 +31,8 @@ def test_live_canary_evidence_binds_candidate_client_and_rollback():
             "status": "PASS",
             "lifecycle": {
                 "plan": "READY",
-                "install": "INSTALLED",
-                "doctor": "HEALTHY",
+                "install": "CANONICAL",
+                "doctor": "CANONICAL",
                 "inventory": "INSTALLED",
                 "rollback": "ROLLED_BACK",
             },
@@ -64,8 +64,8 @@ def test_live_canary_evidence_rejects_failed_preservation():
                 "status": "PASS",
                 "lifecycle": {
                     "plan": "READY",
-                    "install": "INSTALLED",
-                    "doctor": "HEALTHY",
+                    "install": "CANONICAL",
+                    "doctor": "CANONICAL",
                     "inventory": "INSTALLED",
                     "rollback": "ROLLED_BACK",
                 },

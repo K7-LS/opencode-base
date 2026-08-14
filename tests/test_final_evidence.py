@@ -78,8 +78,8 @@ def _evidence(kind: str, binding: dict[str, object]) -> dict[str, object]:
             "model_requests": 0,
             "lifecycle": {
                 "plan": "READY",
-                "install": "INSTALLED",
-                "doctor": "HEALTHY",
+                "install": "CANONICAL",
+                "doctor": "CANONICAL",
                 "inventory": "INSTALLED",
                 "rollback": "ROLLED_BACK",
             },
