@@ -64,8 +64,8 @@ def build_canary_evidence(
 ) -> dict[str, Any]:
     expected_lifecycle = {
         "plan": "READY",
-        "install": "INSTALLED",
-        "doctor": "HEALTHY",
+        "install": "CANONICAL",
+        "doctor": "CANONICAL",
         "inventory": "INSTALLED",
         "rollback": "ROLLED_BACK",
     }
