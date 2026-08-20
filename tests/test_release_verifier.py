@@ -29,7 +29,7 @@ def _fixture(tmp_path: Path) -> tuple[Path, Path, dict[str, object]]:
         "tag": "opencode-v0.1.0",
         "channel": "stable",
         "source": {
-            "repository": "https://github.com/daniileliseev1337/opencode-base",
+            "repository": "https://github.com/K7-LS/opencode-base",
         },
         "asset": {
             "name": asset.name,

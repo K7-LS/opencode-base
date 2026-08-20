@@ -52,7 +52,7 @@ def build_release_verification(
     repository = str(
         manifest.get("source", {}).get("repository", "")
     ).removeprefix("https://github.com/").rstrip("/")
-    if repository != "daniileliseev1337/opencode-base":
+    if repository != "K7-LS/opencode-base":
         raise ValueError("stable OpenCode repository differs")
     if (
         release_api.get("tag_name") != manifest.get("tag")

@@ -39,7 +39,7 @@ try {
         -HomePath $env:USERPROFILE `
         -ScriptBlock {
             Invoke-LlmJsonGet `
-                -Uri 'https://api.github.com/repos/daniileliseev1337/opencode-base/releases?per_page=20' `
+                -Uri 'https://api.github.com/repos/K7-LS/opencode-base/releases?per_page=20' `
                 -UserAgent 'opencode-base-version-check/1' `
                 -TimeoutSeconds 5
         }
