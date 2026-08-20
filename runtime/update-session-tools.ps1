@@ -11,7 +11,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $script:Target = "opencode"
-$script:Repository = "daniileliseev1337/opencode-base"
+$script:Repository = "K7-LS/opencode-base"
 $script:ResultTag = "none"
 $script:InMutation = $false
 $script:LockStream = $null

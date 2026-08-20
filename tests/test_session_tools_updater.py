@@ -170,7 +170,7 @@ def _strict_stable_manifest(bundle, version: str) -> dict[str, object]:
         "foundation_engine_version": "0.3.0",
         "foundation_engine_manifest_sha256": "1" * 64,
         "source": {
-            "repository": "https://github.com/daniileliseev1337/opencode-base",
+            "repository": "https://github.com/K7-LS/opencode-base",
             "commit": "2" * 40,
             "tree": "3" * 40,
             "transformation": "opencode-native-v1",
@@ -187,8 +187,8 @@ def _strict_stable_manifest(bundle, version: str) -> dict[str, object]:
             "immutable_release": True,
             "release_attestation": True,
             "verification_commands": [
-                f"gh release verify opencode-v{version} -R daniileliseev1337/opencode-base",
-                f"gh release verify-asset opencode-v{version} opencode-base-{version}.zip -R daniileliseev1337/opencode-base",
+                f"gh release verify opencode-v{version} -R K7-LS/opencode-base",
+                f"gh release verify-asset opencode-v{version} opencode-base-{version}.zip -R K7-LS/opencode-base",
             ],
         },
         "acceptance_evidence_sha256": "7" * 64,
@@ -347,7 +347,7 @@ def test_managed_updater_verifies_immutable_release_and_installs_unicode_skill(
         "session-tools-v1:opencode:ru-writing-style"
     )
     log = fixture["gh_log"].read_text(encoding="utf-8")
-    assert "api\u001frepos/daniileliseev1337/opencode-base/releases?per_page=20\u001f--jq" in log
+    assert "api\u001frepos/K7-LS/opencode-base/releases?per_page=20\u001f--jq" in log
     assert "release\u001fverify\u001fopencode-v0.1.3" in log
     assert log.count("release\u001fverify-asset") == 2
     assert log.count("attestation\u001fverify") == 2
