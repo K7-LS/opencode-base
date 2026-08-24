@@ -118,6 +118,26 @@ def test_final_evidence_requires_candidate_marker_and_canary():
     assert final["release_binding"] == binding
 
 
+def test_final_evidence_records_absent_marker_as_not_required():
+    binding = _binding()
+    final = finalizer.compose_final_evidence(
+        candidate=_evidence("candidate", binding),
+        provider_marker=None,
+        canary=_evidence("canary", binding),
+    )
+
+    assert final["verdicts"]["OPENCODE_PROVIDER_MARKER"] == "NOT_REQUIRED"
+    assert final["verdicts"]["FULL_RELEASE_OPENCODE"] == "PASS"
+    assert "provider_marker" not in final["evidence_sources"]
+    assert any(
+        "provider live behaviour is unverified" in limitation
+        for limitation in final["limitations"]
+    )
+    assert finalizer.evidence_body_sha256(final) == (
+        final["evidence_body_sha256"]
+    )
+
+
 def test_final_evidence_rejects_tool_event_marker():
     binding = _binding()
     provider = _evidence("marker", binding)

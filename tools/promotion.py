@@ -23,10 +23,12 @@ REQUIRED_VERDICTS = (
     "CLIENT_BINARY_ACCEPTANCE",
     "CANDIDATE_OFFLINE",
     "PROVIDER_NEUTRAL_ACCEPTANCE",
-    "OPENCODE_PROVIDER_MARKER",
     "OPENCODE_CANARY",
     "FULL_RELEASE_OPENCODE",
 )
+OPTIONAL_VERDICTS = {
+    "OPENCODE_PROVIDER_MARKER": ("PASS", "NOT_REQUIRED"),
+}
 
 
 @dataclass(frozen=True)
@@ -75,6 +77,9 @@ def _verify_final(
     for gate in REQUIRED_VERDICTS:
         if verdicts.get(gate) != "PASS":
             raise ValueError(f"{gate} is not PASS")
+    for gate, accepted in OPTIONAL_VERDICTS.items():
+        if verdicts.get(gate) not in accepted:
+            raise ValueError(f"{gate} is not one of {accepted}")
     if verdicts.get("RELEASE_INTEGRITY") != "PENDING_PUBLICATION":
         raise ValueError("RELEASE_INTEGRITY is not pending publication")
 
