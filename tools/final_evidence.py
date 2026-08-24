@@ -179,13 +179,18 @@ def _validate_canary(
 def compose_final_evidence(
     *,
     candidate: dict[str, Any],
-    provider_marker: dict[str, Any],
+    provider_marker: dict[str, Any] | None,
     canary: dict[str, Any],
 ) -> dict[str, Any]:
-    """Compose fail-closed pre-publication OpenCode FULL evidence."""
+    """Compose fail-closed pre-publication OpenCode FULL evidence.
+
+    The provider marker is optional: the owner may release without a paid
+    provider call. Its absence is recorded as NOT_REQUIRED, never as PASS.
+    """
 
     binding = _validate_candidate(candidate)
-    _validate_provider_marker(provider_marker)
+    if provider_marker is not None:
+        _validate_provider_marker(provider_marker)
     _validate_canary(canary, binding)
     final: dict[str, Any] = {
         "schema_version": 1,
@@ -197,22 +202,33 @@ def compose_final_evidence(
             "CLIENT_BINARY_ACCEPTANCE": "PASS",
             "CANDIDATE_OFFLINE": "PASS",
             "PROVIDER_NEUTRAL_ACCEPTANCE": "PASS",
-            "OPENCODE_PROVIDER_MARKER": "PASS",
+            "OPENCODE_PROVIDER_MARKER": (
+                "PASS" if provider_marker is not None else "NOT_REQUIRED"
+            ),
             "OPENCODE_CANARY": "PASS",
             "FULL_RELEASE_OPENCODE": "PASS",
             "RELEASE_INTEGRITY": "PENDING_PUBLICATION",
         },
         "evidence_sources": {
             "candidate_offline": _source_record(candidate),
-            "provider_marker": _source_record(provider_marker),
             "canary": _source_record(canary),
         },
         "limitations": [
             "Release integrity is pending immutable publication and GitHub attestation verification.",
-            "The provider marker proves only the accepted OpenAI OAuth no-tools scenario.",
             "package-acceptance.json requires separate post-publication release-verification.json.",
         ],
     }
+    if provider_marker is not None:
+        final["evidence_sources"]["provider_marker"] = _source_record(
+            provider_marker
+        )
+        final["limitations"].append(
+            "The provider marker proves only the accepted OpenAI OAuth no-tools scenario."
+        )
+    else:
+        final["limitations"].append(
+            "No provider call was authorized for this release; provider live behaviour is unverified."
+        )
     final["evidence_body_sha256"] = evidence_body_sha256(final)
     return final
 
@@ -241,14 +257,16 @@ def main() -> int:
         )
     )
     parser.add_argument("--candidate-evidence", required=True, type=Path)
-    parser.add_argument("--provider-marker-evidence", required=True, type=Path)
+    parser.add_argument("--provider-marker-evidence", type=Path)
     parser.add_argument("--canary-evidence", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     arguments = parser.parse_args()
     final = compose_final_evidence(
         candidate=_load(arguments.candidate_evidence.resolve()),
-        provider_marker=_load(
-            arguments.provider_marker_evidence.resolve()
+        provider_marker=(
+            _load(arguments.provider_marker_evidence.resolve())
+            if arguments.provider_marker_evidence is not None
+            else None
         ),
         canary=_load(arguments.canary_evidence.resolve()),
     )

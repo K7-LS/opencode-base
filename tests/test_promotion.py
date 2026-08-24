@@ -156,6 +156,18 @@ def test_promotion_preserves_exact_candidate_zip(tmp_path: Path):
     assert len(manifest["promoted_from_candidate_manifest_sha256"]) == 64
 
 
+def test_promotion_accepts_release_without_provider_marker(tmp_path: Path):
+    candidate, binding = _candidate(tmp_path)
+
+    result = promotion.promote_candidate(
+        candidate,
+        _final(tmp_path / "final.json", binding, marker="NOT_REQUIRED"),
+        tmp_path / "stable",
+    )
+
+    assert result.zip_path.is_file()
+
+
 def test_promotion_fails_closed_on_marker_failure(tmp_path: Path):
     candidate, binding = _candidate(tmp_path)
 
